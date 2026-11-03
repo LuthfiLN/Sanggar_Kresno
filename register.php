@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
-if (current_user()) {
-    header('Location: ' . app_url('index.php'));
+$activeUser = current_user();
+if ($activeUser) {
+    header('Location: ' . app_url($activeUser['role'] === 'admin' ? 'admin/index.php' : 'index.php'));
     exit;
 }
 
@@ -51,9 +53,12 @@ require __DIR__ . '/includes/header.php';
             <?php if ($error): ?><div class="notice notice-error"><?= e($error) ?></div><?php endif; ?>
             <form class="form-stack" method="post">
                 <?= csrf_field() ?>
-                <label>Nama lengkap<input name="name" required maxlength="120" autocomplete="name" value="<?= e($_POST['name'] ?? '') ?>"></label>
-                <label>Email<input type="email" name="email" required maxlength="190" autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>"></label>
-                <label>Kata sandi<input type="password" name="password" required minlength="10" autocomplete="new-password"><small>Gunakan minimal 10 karakter.</small></label>
+                <label>Nama lengkap<input name="name" required maxlength="120" autocomplete="name"
+                        value="<?= e($_POST['name'] ?? '') ?>"></label>
+                <label>Email<input type="email" name="email" required maxlength="190" autocomplete="email"
+                        value="<?= e($_POST['email'] ?? '') ?>"></label>
+                <label>Kata sandi<input type="password" name="password" required minlength="10"
+                        autocomplete="new-password"><small>Gunakan minimal 10 karakter.</small></label>
                 <button class="button button-dark" type="submit">Buat akun</button>
             </form>
             <p class="auth-switch">Sudah punya akun? <a href="login.php">Masuk</a></p>

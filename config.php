@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 date_default_timezone_set('Asia/Jakarta');
@@ -107,7 +108,11 @@ function require_login(): array
 
 function require_admin(): array
 {
-    $user = require_login();
+    $user = current_user();
+    if (!$user) {
+        header('Location: ' . app_url('login.php?role=admin'));
+        exit;
+    }
     if ($user['role'] !== 'admin') {
         http_response_code(403);
         exit('Halaman ini hanya untuk admin.');
@@ -151,4 +156,3 @@ function payment_status_label(string $status): string
         'paid' => 'Lunas 100%',
     ][$status] ?? ucfirst($status);
 }
-?>

@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
-if (current_user()) {
-    header('Location: ' . app_url('index.php'));
+$activeUser = current_user();
+if ($activeUser) {
+    header('Location: ' . app_url($activeUser['role'] === 'admin' ? 'admin/index.php' : 'index.php'));
     exit;
 }
 
@@ -24,28 +26,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $error = 'Email atau kata sandi belum cocok.';
 }
 
-$pageTitle = 'Masuk pelanggan';
+$pageTitle = 'Masuk';
 require __DIR__ . '/includes/header.php';
 ?>
 <main class="page-shell">
     <div class="auth-layout">
         <div class="auth-art">
-            <p class="eyebrow">SANGGAR TRESNO</p>
+            <p class="eyebrow">DAPUR TRESNO / MEDAN</p>
             <h2>Manisnya Lebaran dimulai dari rumah.</h2>
-            <p>Masuk untuk mengikuti preorder kue dan jadwal kirim.</p>
+            <p>Masuk untuk mengikuti preorder atau mengelola toko.</p>
         </div>
         <section class="auth-form">
-            <p class="eyebrow">SELAMAT DATANG KEMBALI</p>
+            <p class="eyebrow">AKUN SANGGAR TRESNO</p>
             <h1>Masuk</h1>
-            <p>Gunakan email yang terdaftar untuk melanjutkan.</p>
             <?php if ($error): ?><div class="notice notice-error"><?= e($error) ?></div><?php endif; ?>
             <form class="form-stack" method="post">
                 <?= csrf_field() ?>
-                <label>Email<input type="email" name="email" required autocomplete="email"></label>
-                <label>Kata sandi<input type="password" name="password" required autocomplete="current-password"></label>
-                <button class="button button-dark" type="submit">Masuk ke akun</button>
+                <label>Email<input type="email" name="email" required autocomplete="username"></label>
+                <label>Kata sandi<input type="password" name="password" required
+                        autocomplete="current-password"></label>
+                <button class="button button-dark" type="submit">Masuk</button>
             </form>
-            <p class="auth-switch">Belum punya akun? <a href="register.php">Daftar di sini</a></p>
+            <p class="auth-switch">Belum punya akun pelanggan? <a href="register.php">Daftar di sini</a></p>
         </section>
     </div>
 </main>

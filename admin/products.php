@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/config.php';
@@ -53,7 +54,71 @@ if ($editId) {
 }
 $products = $pdo->query('SELECT * FROM products ORDER BY created_at DESC')->fetchAll();
 $pageTitle = 'Kelola produk';
-require dirname(__DIR__) . '/includes/header.php';
+$adminActive = 'products';
+require dirname(__DIR__) . '/includes/admin_header.php';
 ?>
-<main class="page-shell"><div class="page-heading"><p class="eyebrow">ADMIN / MENU KUE</p><h1>Kelola menu preorder</h1><p>Atur harga, ilustrasi menu, dan kuota preorder setiap batch.</p></div><p><a class="text-link" href="index.php">&#8592; Kembali ke ringkasan</a></p><?php if ($error): ?><div class="notice notice-error"><?= e($error) ?></div><?php endif; ?><div class="admin-columns"><section class="admin-section"><h2><?= $editProduct ? 'Ubah menu' : 'Tambah kue' ?></h2><form class="panel form-stack" method="post"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="id" value="<?= (int) ($editProduct['id'] ?? 0) ?>"><label>Nama kue<input name="name" required maxlength="180" value="<?= e($editProduct['name'] ?? '') ?>"></label><label>Kategori<input name="category" required maxlength="100" value="<?= e($editProduct['category'] ?? 'Kue Kering') ?>"></label><label>Deskripsi<textarea name="description" required><?= e($editProduct['description'] ?? '') ?></textarea></label><div class="form-grid"><label>Harga per toples (Rp)<input type="number" name="price" min="1" step="1" required value="<?= e($editProduct['price'] ?? '') ?>"></label><label>Kuota preorder<input type="number" name="stock" min="0" step="1" required value="<?= e($editProduct['stock'] ?? '20') ?>"></label></div><label>Path aset atau URL gambar<input type="text" name="image_url" maxlength="1000" value="<?= e($editProduct['image_url'] ?? '') ?>" placeholder="assets/product-nastar.png"></label><button class="button button-dark" type="submit"><?= $editProduct ? 'Simpan perubahan' : 'Tambahkan kue' ?></button><?php if ($editProduct): ?><a class="text-link" href="products.php">Batal mengubah</a><?php endif; ?></form></section><section class="admin-section"><h2>Menu preorder</h2><div class="panel table-wrap"><table><thead><tr><th>Kue</th><th>Harga/toples</th><th>Sisa kuota</th><th>Status</th><th></th></tr></thead><tbody><?php if (!$products): ?><tr><td colspan="5">Belum ada menu kue.</td></tr><?php endif; ?><?php foreach ($products as $product): ?><tr><td><?= $product['image_url'] ? '<img class="admin-thumb" src="' . e(asset_url($product['image_url'])) . '" alt=""> ' : '' ?><?= e($product['name']) ?></td><td><?= rupiah($product['price']) ?></td><td><?= (int) $product['stock'] ?></td><td><?= $product['is_active'] ? 'Aktif' : 'Disembunyikan' ?></td><td class="admin-actions"><a class="text-link" href="products.php?edit=<?= (int) $product['id'] ?>">Ubah</a><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int) $product['id'] ?>"><button class="button button-outline button-small" type="submit"><?= $product['is_active'] ? 'Sembunyikan' : 'Aktifkan' ?></button></form></td></tr><?php endforeach; ?></tbody></table></div></section></div></main>
-<?php require dirname(__DIR__) . '/includes/footer.php'; ?>
+<main class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">ADMIN / MENU KUE</p>
+        <h1>Kelola menu preorder</h1>
+        <p>Atur harga, ilustrasi menu, dan kuota preorder setiap batch.</p>
+    </div>
+    <p><a class="text-link" href="index.php">&#8592; Kembali ke ringkasan</a></p><?php if ($error): ?><div
+        class="notice notice-error"><?= e($error) ?></div><?php endif; ?><div class="admin-columns">
+        <section class="admin-section">
+            <h2><?= $editProduct ? 'Ubah menu' : 'Tambah kue' ?></h2>
+            <form class="panel form-stack" method="post"><?= csrf_field() ?><input type="hidden" name="action"
+                    value="save"><input type="hidden" name="id"
+                    value="<?= (int) ($editProduct['id'] ?? 0) ?>"><label>Nama kue<input name="name" required
+                        maxlength="180" value="<?= e($editProduct['name'] ?? '') ?>"></label><label>Kategori<input
+                        name="category" required maxlength="100"
+                        value="<?= e($editProduct['category'] ?? 'Kue Kering') ?>"></label><label>Deskripsi<textarea
+                        name="description" required><?= e($editProduct['description'] ?? '') ?></textarea></label>
+                <div class="form-grid"><label>Harga per toples (Rp)<input type="number" name="price" min="1" step="1"
+                            required value="<?= e($editProduct['price'] ?? '') ?>"></label><label>Kuota preorder<input
+                            type="number" name="stock" min="0" step="1" required
+                            value="<?= e($editProduct['stock'] ?? '20') ?>"></label></div><label>Path aset atau URL
+                    gambar<input type="text" name="image_url" maxlength="1000"
+                        value="<?= e($editProduct['image_url'] ?? '') ?>"
+                        placeholder="assets/product-nastar.png"></label><button class="button button-dark"
+                    type="submit"><?= $editProduct ? 'Simpan perubahan' : 'Tambahkan kue' ?></button><?php if ($editProduct): ?><a
+                    class="text-link" href="products.php">Batal mengubah</a><?php endif; ?>
+            </form>
+        </section>
+        <section class="admin-section">
+            <h2>Menu preorder</h2>
+            <div class="panel table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kue</th>
+                            <th>Harga/toples</th>
+                            <th>Sisa kuota</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody><?php if (!$products): ?><tr>
+                            <td colspan="5">Belum ada menu kue.</td>
+                        </tr><?php endif; ?><?php foreach ($products as $product): ?><tr>
+                            <td><?= $product['image_url'] ? '<img class="admin-thumb" src="' . e(asset_url($product['image_url'])) . '" alt=""> ' : '' ?><?= e($product['name']) ?>
+                            </td>
+                            <td><?= rupiah($product['price']) ?></td>
+                            <td><?= (int) $product['stock'] ?></td>
+                            <td><?= $product['is_active'] ? 'Aktif' : 'Disembunyikan' ?></td>
+                            <td class="admin-actions"><a class="text-link"
+                                    href="products.php?edit=<?= (int) $product['id'] ?>">Ubah</a>
+                                <form method="post"><?= csrf_field() ?><input type="hidden" name="action"
+                                        value="toggle"><input type="hidden" name="id"
+                                        value="<?= (int) $product['id'] ?>"><button
+                                        class="button button-outline button-small"
+                                        type="submit"><?= $product['is_active'] ? 'Sembunyikan' : 'Aktifkan' ?></button>
+                                </form>
+                            </td>
+                        </tr><?php endforeach; ?></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+<?php require dirname(__DIR__) . '/includes/admin_footer.php'; ?>

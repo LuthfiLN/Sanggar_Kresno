@@ -11,9 +11,11 @@ Toko online kue Lebaran rumahan dengan sistem preorder. Kue mulai dibuat setelah
 5. Buat akun admin pertama jika belum ada.
 6. Buka `http://localhost/Sanggar_Tresno/` untuk katalog atau `http://localhost/Sanggar_Tresno/admin/` untuk dashboard.
 
+Gunakan satu halaman login di `http://localhost/Sanggar_Tresno/login.php`. Setelah email dan kata sandi diverifikasi, sistem membaca role akun dan mengarahkan admin ke dashboard atau pelanggan ke toko. Registrasi publik hanya membuat akun pelanggan. Admin yang sudah masuk dapat membuat admin tambahan melalui menu **Akun admin**.
+
 ## Alur preorder
 
-- Pembeli memilih kue dan tanggal pengiriman di Medan.
+- Pembeli memilih kue dan tanggal pengiriman di Medan, minimal 3 hari setelah pemesanan. Admin dapat menyesuaikan jadwal setelah menyepakatinya dengan pelanggan melalui chat.
 - Sistem mencatat total dan nominal DP tepat 50% dari harga kue. Ongkir dikonfirmasi terpisah lewat chat.
 - Admin mengirim detail pembayaran melalui chat dan memverifikasi transfer DP secara manual.
 - Setelah DP terverifikasi, pesanan masuk tahap produksi.

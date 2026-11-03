@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
@@ -47,8 +48,78 @@ if ($cart) {
 $pageTitle = 'Tas belanja';
 require __DIR__ . '/includes/header.php';
 ?>
-<main class="page-shell"><div class="page-heading"><p class="eyebrow">PILIHANMU</p><h1>Tas belanja</h1><p>Periksa koleksimu sebelum melanjutkan ke pemesanan.</p></div>
-    <?php if (!$items): ?><div class="panel"><p>Tasmu masih kosong.</p><a class="button button-dark" href="index.php#koleksi">Lihat koleksi</a></div>
-    <?php else: ?><div class="cart-layout"><section class="panel"><?php foreach ($items as $item): ?><article class="cart-item"><img src="<?= e(asset_url($item['image_url'])) ?>" alt="<?= e($item['name']) ?>"><div><h3><?= e($item['name']) ?></h3><p><?= rupiah($item['price']) ?> &middot; kuota preorder <?= (int) $item['stock'] ?></p></div><div class="cart-qty"><form method="post" class="cart-qty"><?= csrf_field() ?><input type="hidden" name="action" value="update"><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>"><input type="number" name="quantity" min="1" max="<?= (int) $item['stock'] ?>" value="<?= (int) $item['quantity'] ?>" aria-label="Jumlah <?= e($item['name']) ?>"><button class="button button-outline button-small" type="submit">Perbarui</button></form><strong><?= rupiah($item['subtotal']) ?></strong><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="remove"><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>"><button class="button button-outline button-small" type="submit" aria-label="Hapus <?= e($item['name']) ?>">Hapus</button></form></div></article><?php endforeach; ?></section><aside class="summary-panel"><h2>Ringkasan</h2><div class="summary-row"><span><?= count($items) ?> jenis kue</span><span><?= rupiah($total) ?></span></div><div class="summary-row summary-total"><span>DP 50% sebelum dibuat</span><span><?= rupiah($total * 0.5) ?></span></div><div class="summary-row"><span>Sisa pelunasan</span><span><?= rupiah($total * 0.5) ?></span></div><a class="button button-dark" href="checkout.php">Atur preorder <span aria-hidden="true">&#8594;</span></a><p class="payment-note">Ongkir area Medan dikonfirmasi terpisah. Produksi dimulai setelah DP 50% diverifikasi admin.</p></aside></div><?php endif; ?>
+<main class="page-shell">
+    <nav class="checkout-steps" aria-label="Tahap pemesanan"><span class="is-current"><b>1</b>
+            Keranjang</span><span><b>2</b> Checkout</span><span><b>3</b> Konfirmasi DP</span></nav>
+    <div class="page-heading">
+        <p class="eyebrow">PILIHANMU</p>
+        <h1>Keranjang kamu</h1>
+        <p><?= array_sum(array_map('intval', $cart)) ?> item. Periksa kue dan jadwal sebelum lanjut checkout.</p>
+    </div>
+    <?php if (!$items): ?><div class="panel">
+        <p>Tasmu masih kosong.</p><a class="button button-dark" href="index.php#koleksi">Lihat koleksi</a>
+    </div>
+    <?php else: ?>
+    <div class="cart-layout">
+        <section class="cart-main-column">
+            <div class="panel cart-products-panel">
+                <h2 class="checkout-section-title">Produk pesanan</h2>
+                <?php foreach ($items as $item): ?>
+                <article class="cart-item">
+                    <img src="<?= e(asset_url($item['image_url'])) ?>" alt="<?= e($item['name']) ?>">
+                    <div>
+                        <h3><?= e($item['name']) ?></h3>
+                        <p><?= (int) $item['quantity'] ?> toples &middot; <?= rupiah($item['price']) ?> per toples</p>
+                    </div>
+                    <div class="cart-qty">
+                        <form method="post" class="cart-qty"><?= csrf_field() ?><input type="hidden" name="action"
+                                value="update"><input type="hidden" name="product_id"
+                                value="<?= (int) $item['id'] ?>"><input type="number" name="quantity" min="1"
+                                max="<?= (int) $item['stock'] ?>" value="<?= (int) $item['quantity'] ?>"
+                                aria-label="Jumlah <?= e($item['name']) ?>"><button
+                                class="button button-outline button-small" type="submit">Ubah</button></form>
+                        <strong><?= rupiah($item['subtotal']) ?></strong>
+                        <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="remove"><input
+                                type="hidden" name="product_id" value="<?= (int) $item['id'] ?>"><button
+                                class="button button-outline button-small" type="submit"
+                                aria-label="Hapus <?= e($item['name']) ?>">Hapus</button></form>
+                    </div>
+                </article>
+                <?php endforeach; ?>
+                <a class="text-link cart-add-more" href="index.php#koleksi">+ Tambah produk</a>
+            </div>
+            <section class="cart-negotiation">
+                <div>
+                    <p class="eyebrow">PENGIRIMAN MEDAN</p>
+                    <h2>Sepakati ongkir</h2>
+                    <p><?= ($_SESSION['preorder_fulfillment'] ?? 'delivery') === 'pickup' ? 'Pilihan saat ini: ambil sendiri.' : 'Ongkir belum ditambahkan ke total. Diskusikan dengan admin sebelum checkout.' ?>
+                    </p>
+                </div>
+                <a class="button button-outline" href="chat.php">Chat admin</a>
+            </section>
+        </section>
+        <aside class="cart-summary-column">
+            <section class="summary-panel">
+                <h2>Ringkasan pesanan</h2>
+                <p class="order-reference">Keranjang &middot; <?= array_sum(array_map('intval', $cart)) ?> item</p>
+                <div class="summary-row"><span>Subtotal produk</span><span><?= rupiah($total) ?></span></div>
+                <div class="summary-row"><span>Ongkir</span><span>Belum disepakati</span></div>
+                <div class="summary-row summary-total"><span>Total sementara</span><span><?= rupiah($total) ?></span>
+                </div>
+                <div class="dp-summary"><strong>DP 50% sebelum
+                        dibuat</strong><b><?= rupiah(round($total * 0.5, 2)) ?></b><small>Sisa pelunasan
+                        <?= rupiah(round($total * 0.5, 2)) ?></small></div>
+                <a class="button button-dark" href="checkout.php">Lanjut checkout <span
+                        aria-hidden="true">&#8594;</span></a>
+                <p class="payment-note">Jumlah akhir menunggu kesepakatan ongkir. Pesanan diproses setelah DP
+                    dikonfirmasi.</p>
+            </section>
+            <p class="cart-delivery-note">Jadwal:
+                <?= !empty($_SESSION['preorder_delivery_date']) ? e(date('D, d M Y', strtotime($_SESSION['preorder_delivery_date']))) : 'Pilih saat checkout' ?><br>Metode:
+                <?= ($_SESSION['preorder_fulfillment'] ?? 'delivery') === 'pickup' ? 'Ambil sendiri' : 'Antar ke alamat' ?>
+            </p>
+        </aside>
+    </div>
+    <?php endif; ?>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

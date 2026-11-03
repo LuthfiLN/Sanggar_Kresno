@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
@@ -51,7 +52,44 @@ if ($selectedCustomer) {
     $messages = $query->fetchAll();
 }
 $pageTitle = 'Pesan';
-require __DIR__ . '/includes/header.php';
+if ($isAdmin) {
+    $adminActive = 'chat';
+    require __DIR__ . '/includes/admin_header.php';
+} else {
+    require __DIR__ . '/includes/header.php';
+}
 ?>
-<main class="page-shell"><div class="page-heading"><p class="eyebrow">CHAT PREORDER / MEDAN</p><h1><?= $isAdmin ? 'Pesan masuk' : 'Tanya Sanggar Tresno' ?></h1><p><?= $isAdmin ? 'Koordinasikan jadwal, DP, dan pengiriman kue.' : 'Tanyakan pilihan kue, konfirmasi DP, atau jadwal pengiriman.' ?></p></div><div class="chat-layout"><?php if ($isAdmin): ?><aside class="chat-aside"><h2>Pelanggan</h2><?php if (!$customers): ?><p>Belum ada akun pelanggan.</p><?php else: ?><div class="message-thread-list"><?php foreach ($customers as $item): ?><a class="thread-link" href="chat.php?customer=<?= (int) $item['id'] ?>" <?= (int) $item['id'] === $selectedCustomer ? 'style="border-color:var(--green);background:var(--white)"' : '' ?>><?= e($item['name']) ?><br><small><?= e($item['email']) ?></small></a><?php endforeach; ?></div><?php endif; ?></aside><?php else: ?><aside class="chat-aside"><h2>Sanggar Tresno</h2><p>Pesanmu hanya dapat dibaca oleh tim admin dan kamu.</p><p>Balasan akan muncul di percakapan ini.</p></aside><?php endif; ?><section class="chat-main"><div class="chat-messages" aria-live="polite"><?php if (!$messages): ?><p style="color:var(--muted);font-size:12px">Belum ada pesan di percakapan ini. Sapa admin untuk memulai.</p><?php endif; ?><?php foreach ($messages as $message): $own = ($isAdmin && $message['sender_role'] === 'admin') || (!$isAdmin && $message['sender_role'] === 'customer'); ?><article class="message <?= $own ? 'message-own' : '' ?>"><?= e($message['body']) ?><small><?= e($own ? 'Anda' : ($isAdmin ? $message['sender_name'] : 'Admin')) ?> &middot; <?= e(date('d M, H:i', strtotime($message['created_at']))) ?></small></article><?php endforeach; ?></div><?php if (!$isAdmin || $customer): ?><form class="chat-compose" method="post"><?= csrf_field() ?><?php if ($isAdmin): ?><input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer ?>"><?php endif; ?><textarea name="body" required maxlength="2000" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea><button class="button button-dark" type="submit">Kirim</button></form><?php endif; ?></section></div></main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<main class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">CHAT PREORDER / MEDAN</p>
+        <h1><?= $isAdmin ? 'Pesan masuk' : 'Tanya Sanggar Tresno' ?></h1>
+        <p><?= $isAdmin ? 'Koordinasikan jadwal, DP, dan pengiriman kue.' : 'Tanyakan pilihan kue, konfirmasi DP, atau jadwal pengiriman.' ?>
+        </p>
+    </div>
+    <div class="chat-layout"><?php if ($isAdmin): ?><aside class="chat-aside">
+            <h2>Pelanggan</h2><?php if (!$customers): ?><p>Belum ada akun pelanggan.</p><?php else: ?><div
+                class="message-thread-list"><?php foreach ($customers as $item): ?><a class="thread-link"
+                    href="chat.php?customer=<?= (int) $item['id'] ?>"
+                    <?= (int) $item['id'] === $selectedCustomer ? 'style="border-color:var(--green);background:var(--white)"' : '' ?>><?= e($item['name']) ?><br><small><?= e($item['email']) ?></small></a><?php endforeach; ?>
+            </div><?php endif; ?>
+        </aside><?php else: ?><aside class="chat-aside">
+            <h2>Sanggar Tresno</h2>
+            <p>Pesanmu hanya dapat dibaca oleh tim admin dan kamu.</p>
+            <p>Balasan akan muncul di percakapan ini.</p>
+        </aside><?php endif; ?><section class="chat-main">
+            <div class="chat-messages" aria-live="polite"><?php if (!$messages): ?><p
+                    style="color:var(--muted);font-size:12px">Belum ada pesan di percakapan ini. Sapa admin untuk
+                    memulai.</p>
+                <?php endif; ?><?php foreach ($messages as $message): $own = ($isAdmin && $message['sender_role'] === 'admin') || (!$isAdmin && $message['sender_role'] === 'customer'); ?>
+                <article class="message <?= $own ? 'message-own' : '' ?>">
+                    <?= e($message['body']) ?><small><?= e($own ? 'Anda' : ($isAdmin ? $message['sender_name'] : 'Admin')) ?>
+                        &middot; <?= e(date('d M, H:i', strtotime($message['created_at']))) ?></small></article>
+                <?php endforeach; ?></div><?php if (!$isAdmin || $customer): ?><form class="chat-compose" method="post">
+                <?= csrf_field() ?><?php if ($isAdmin): ?><input type="hidden" name="customer_id"
+                    value="<?= (int) $selectedCustomer ?>"><?php endif; ?><textarea name="body" required
+                    maxlength="2000" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea><button
+                    class="button button-dark" type="submit">Kirim</button></form><?php endif; ?>
+        </section>
+    </div>
+</main>
+<?php require __DIR__ . ($isAdmin ? '/includes/admin_footer.php' : '/includes/footer.php'); ?>
