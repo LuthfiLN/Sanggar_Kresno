@@ -94,7 +94,8 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                 <?php endif; ?>
                 <?php foreach ($productionItems as $item): ?><div class="production-item">
                     <span><?= e($item['name']) ?><small><?= e($item['category']) ?></small></span><strong><?= (int) $item['quantity'] ?>
-                        toples</strong></div><?php endforeach; ?>
+                        toples</strong>
+                </div><?php endforeach; ?>
             </div>
             <h2 class="quick-actions-title">Akses cepat</h2>
             <div class="panel form-stack"><a class="button button-dark" href="products.php">Kelola produk</a><a
