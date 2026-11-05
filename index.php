@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'add') {
     verify_csrf();
     $productId = filter_var($_POST['product_id'] ?? null, FILTER_VALIDATE_INT);
     $quantity = filter_var($_POST['quantity'] ?? 1, FILTER_VALIDATE_INT);
@@ -79,10 +78,8 @@ require __DIR__ . '/includes/header.php';
                 <p>Pilih produk dari jadwal pre-order.</p>
             </div>
             <div class="schedule-info">
-                <span class="schedule-icon">📅</span>
                 <div>
-                    <strong>Pre-order - Sabtu, 24 Okt 2026</strong>
-                    <small>Tutup 22 Okt, 18:00 WIB • Antar & ambil sendiri</small>
+                    <small>Tutup pre-order, 18:00 WIB • Antar & ambil sendiri</small>
                 </div>
             </div>
         </div>

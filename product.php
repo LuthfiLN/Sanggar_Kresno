@@ -45,8 +45,8 @@ require __DIR__ . '/includes/header.php';
                 <input type="hidden" name="action" value="add">
                 <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
                 <label>Tanggal pre-order<input type="date" name="delivery_date"
-                        min="<?= e($minimumDeliveryDate->format('Y-m-d')) ?>"
-                        value="<?= e($defaultDeliveryDate) ?>" required><small>Pilih tanggal minimal 3 hari setelah pemesanan. Jadwal dan
+                        min="<?= e($minimumDeliveryDate->format('Y-m-d')) ?>" value="<?= e($defaultDeliveryDate) ?>"
+                        required><small>Pilih tanggal minimal 3 hari setelah pemesanan. Jadwal dan
                         ketersediaan dikonfirmasi admin.</small></label>
                 <label>Metode penerimaan<select name="fulfillment">
                         <option value="delivery" <?= $defaultFulfillment === 'delivery' ? 'selected' : '' ?>>Antar ke
@@ -54,13 +54,23 @@ require __DIR__ . '/includes/header.php';
                         <option value="pickup" <?= $defaultFulfillment === 'pickup' ? 'selected' : '' ?>>Ambil sendiri
                         </option>
                     </select><small>Ongkir area Medan dinegosiasikan dengan admin di keranjang.</small></label>
-                <div class="product-quantity-row"><label for="product-quantity">Jumlah</label><input
-                        id="product-quantity" type="number" name="quantity" value="1" min="1"
-                        max="<?= max(1, (int) $product['stock']) ?>" required><span>Kuota preorder:
-                        <?= (int) $product['stock'] ?></span></div>
+
+                <div class="product-quantity-row">
+                    <label for="product-quantity">Jumlah</label>
+                    <div class="qty-stepper-container">
+                        <div class="qty-stepper">
+                            <button type="button" class="qty-btn" onclick="decrementQty()">&minus;</button>
+                            <input id="product-quantity" type="number" name="quantity" value="1" min="1"
+                                max="<?= max(1, (int) $product['stock']) ?>" readonly required>
+                            <button type="button" class="qty-btn" onclick="incrementQty()">&plus;</button>
+                        </div>
+                        <span class="stock-info">Kuota preorder: <?= (int) $product['stock'] ?></span>
+                    </div>
+                </div>
+
                 <button class="button button-dark" type="submit"
-                    <?= (int) $product['stock'] < 1 ? 'disabled' : '' ?>>Tambah ke keranjang <span
-                        aria-hidden="true">&#8594;</span></button>
+                    <?= (int) $product['stock'] < 1 ? 'disabled' : '' ?>>Tambah ke
+                    keranjang <span aria-hidden="true">&#8594;</span></button>
             </form>
             <div class="product-payment-note"><strong>Pesanan dibuat setelah DP diterima</strong><span>DP 50% dari total
                     produk. Pelunasan dilakukan sebelum pesanan dikirim.</span></div>
@@ -81,4 +91,24 @@ require __DIR__ . '/includes/header.php';
         </article>
     </section>
 </main>
+
+<script>
+function decrementQty() {
+    const input = document.getElementById('product-quantity');
+    let val = parseInt(input.value) || 1;
+    if (val > 1) {
+        input.value = val - 1;
+    }
+}
+
+function incrementQty() {
+    const input = document.getElementById('product-quantity');
+    const max = parseInt(input.getAttribute('max')) || 999;
+    let val = parseInt(input.value) || 1;
+    if (val < max) {
+        input.value = val + 1;
+    }
+}
+</script>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>

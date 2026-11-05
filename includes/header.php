@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__) . '/config.php';
+
 $pageTitle = $pageTitle ?? 'Aneka kue rumahan';
 $viewer = current_user();
 $cartCount = array_sum(array_map('intval', $_SESSION['cart'] ?? []));
@@ -18,7 +20,7 @@ $flashMessage = take_flash();
     <link
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="<?= e(app_url('assets/style.css')) ?>">
+    <link rel="stylesheet" href="/Sanggar_Tresno/assets/style.css">
 </head>
 
 <body>
