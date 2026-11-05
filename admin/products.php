@@ -79,8 +79,8 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                             type="number" name="stock" min="0" step="1" required
                             value="<?= e($editProduct['stock'] ?? '20') ?>"></label></div><label>Path aset atau URL
                     gambar<input type="text" name="image_url" maxlength="1000"
-                        value="<?= e($editProduct['image_url'] ?? '') ?>"
-                        placeholder="assets/product-nastar.png"></label><button class="button button-dark"
+                        value="<?= e($editProduct['image_url'] ?? '') ?>" placeholder="url gambar"></label><button
+                    class="button button-dark"
                     type="submit"><?= $editProduct ? 'Simpan perubahan' : 'Tambahkan kue' ?></button><?php if ($editProduct): ?><a
                     class="text-link" href="products.php">Batal mengubah</a><?php endif; ?>
             </form>
