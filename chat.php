@@ -14,7 +14,7 @@ $customer = null;
 
 if ($isAdmin) {
     $orders = $pdo->query("
-        SELECT o.id, o.user_id, o.total, o.shipping_fee, o.payment_status, o.status, o.delivery_date, o.created_at,
+        SELECT o.id, o.user_id, o.total, o.shipping_fee, o.dp_amount, o.address, o.payment_status, o.status, o.delivery_date, o.created_at,
                u.name AS customer_name, u.email AS customer_email,
                (SELECT MAX(m.created_at) FROM messages m WHERE m.order_id = o.id) AS latest_message,
                (SELECT COUNT(*) FROM messages m WHERE m.order_id = o.id) AS message_count
