@@ -22,13 +22,14 @@ $adminNavigation = [
     <title><?= e($adminPageTitle) ?> | Admin Sanggar Tresno</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="<?= e(asset_url('assets/style.css')) ?>">
 </head>
 
 <body class="admin-body">
     <div class="admin-layout">
-        <!-- Sidebar Admin Sesuai Gambar 3.27, 3.28, 3.29, 3.30 -->
         <aside class="admin-sidebar">
             <div class="admin-sidebar-top">
                 <a class="brand admin-brand" href="<?= e(app_url('admin/index.php')) ?>">
@@ -43,12 +44,14 @@ $adminNavigation = [
             <p class="admin-nav-label">MANAJEMEN TOKO</p>
             <nav class="admin-nav" aria-label="Navigasi admin">
                 <?php foreach ($adminNavigation as $key => [$label, $path, $iconSvg]): ?>
-                    <a class="admin-nav-link <?= $adminActive === $key ? 'is-active' : '' ?>" href="<?= e(app_url($path)) ?>">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="<?= $iconSvg ?>"></path>
-                        </svg>
-                        <span><?= e($label) ?></span>
-                    </a>
+                <a class="admin-nav-link <?= $adminActive === $key ? 'is-active' : '' ?>"
+                    href="<?= e(app_url($path)) ?>">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="<?= $iconSvg ?>"></path>
+                    </svg>
+                    <span><?= e($label) ?></span>
+                </a>
                 <?php endforeach; ?>
             </nav>
 
@@ -67,7 +70,6 @@ $adminNavigation = [
             </div>
         </aside>
 
-        <!-- Area Kerja Admin -->
         <div class="admin-workspace">
             <header class="admin-topbar">
                 <div class="admin-topbar-breadcrumb">
@@ -79,7 +81,8 @@ $adminNavigation = [
                 <div class="admin-topbar-actions">
                     <form method="post" action="<?= e(app_url('logout.php')) ?>" class="admin-logout-form">
                         <?= csrf_field() ?>
-                        <button type="submit" class="button button-outline-dark button-small" title="Keluar dari akun admin">
+                        <button type="submit" class="button button-outline-dark button-small"
+                            title="Keluar dari akun admin">
                             Keluar
                         </button>
                     </form>
@@ -87,9 +90,9 @@ $adminNavigation = [
             </header>
 
             <?php if ($flashMessage = take_flash()): ?>
-                <div class="flash-wrap">
-                    <div class="notice notice-<?= e($flashMessage['type']) ?>"><?= e($flashMessage['message']) ?></div>
-                </div>
+            <div class="flash-wrap">
+                <div class="notice notice-<?= e($flashMessage['type']) ?>"><?= e($flashMessage['message']) ?></div>
+            </div>
             <?php endif; ?>
 
             <div class="admin-content-inner">

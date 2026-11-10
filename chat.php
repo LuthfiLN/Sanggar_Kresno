@@ -12,7 +12,6 @@ $customers = [];
 $customer = null;
 
 if ($isAdmin) {
-    // Ambil daftar customer dengan pesan terakhir
     $customers = $pdo->query("SELECT u.id, u.name, u.email, MAX(m.created_at) AS latest_message, (SELECT o.id FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 1) AS latest_order_id FROM users u LEFT JOIN messages m ON m.customer_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY latest_message DESC, u.name ASC")->fetchAll();
 
     if (!$selectedCustomer && $customers) {
@@ -29,7 +28,6 @@ if ($isAdmin) {
     $customer = $user;
 }
 
-// Menangani Aksi Form: Kirim Pesan, Atur Ongkir, dan Penyesuaian Jadwal oleh Admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? 'send_message';
@@ -46,7 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Aksi Admin: Atur Ongkir Final
     if ($isAdmin && $action === 'set_shipping') {
         $targetOrderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
         $shippingFee = max(0, (int) ($_POST['shipping_fee'] ?? 0));
@@ -55,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $pdo->prepare('UPDATE orders SET shipping_fee = ? WHERE id = ?');
             $update->execute([$shippingFee, $targetOrderId]);
 
-            // Kirim pesan otomatis ke chat
             $notifMsg = 'Ongkir telah disepakati sebesar ' . rupiah($shippingFee) . ' dan diterapkan ke pesanan #' . order_code($targetOrderId) . '.';
             $insertMsg = $pdo->prepare("INSERT INTO messages (customer_id, sender_role, body) VALUES (?, 'admin', ?)");
             $insertMsg->execute([$selectedCustomer, $notifMsg]);
@@ -66,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Aksi Admin: Penyesuaian Tanggal Pengiriman / Kesiapan Pesanan (Permintaan Inti Pengguna)
     if ($isAdmin && $action === 'adjust_delivery_date') {
         $targetOrderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
         $newDate = trim((string) ($_POST['delivery_date'] ?? ''));
@@ -75,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $pdo->prepare('UPDATE orders SET delivery_date = ? WHERE id = ?');
             $update->execute([$newDate, $targetOrderId]);
 
-            // Kirim pesan konfirmasi penyesuaian jadwal ke chat
             $notifMsg = 'Jadwal pengiriman pesanan #' . order_code($targetOrderId) . ' telah disesuaikan menjadi: ' . indo_date($newDate) . ' (13.00-16.00 WIB) sesuai kesepakatan bersama.';
             $insertMsg = $pdo->prepare("INSERT INTO messages (customer_id, sender_role, body) VALUES (?, 'admin', ?)");
             $insertMsg->execute([$selectedCustomer, $notifMsg]);
@@ -87,7 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Ambil riwayat percakapan
 $messages = [];
 if ($selectedCustomer) {
     $q = $pdo->prepare('SELECT m.*, u.name AS customer_name FROM messages m JOIN users u ON u.id = m.customer_id WHERE m.customer_id = ? ORDER BY m.id ASC LIMIT 300');
@@ -95,7 +88,6 @@ if ($selectedCustomer) {
     $messages = $q->fetchAll();
 }
 
-// Ambil pesanan aktif/terkait pelanggan untuk panel kanan / informasi negosiasi
 $latestOrder = null;
 $orderItems = [];
 if ($selectedCustomer) {
@@ -124,39 +116,39 @@ if ($isAdmin) {
     <div class="page-heading">
         <p class="eyebrow"><?= $isAdmin ? 'RUANG ADMIN / NEGOSIASI' : 'CHAT PREORDER / MEDAN' ?></p>
         <h1><?= $isAdmin ? 'Inbox negosiasi' : 'Tanya Sanggar Tresno' ?></h1>
-        <p><?= $isAdmin ? 'Sepakati ongkir dengan pelanggan dan sesuaikan jadwal pengiriman pesanan.' : 'Diskusikan pilihan kue, penentuan ongkir Medan, atau penyesuaian jadwal pengiriman.' ?></p>
+        <p><?= $isAdmin ? 'Sepakati ongkir dengan pelanggan dan sesuaikan jadwal pengiriman pesanan.' : 'Diskusikan pilihan kue, penentuan ongkir Medan, atau penyesuaian jadwal pengiriman.' ?>
+        </p>
     </div>
 
     <div class="chat-main-grid-layout <?= $isAdmin ? 'admin-chat-mode' : 'user-chat-mode' ?>">
-        <!-- Kolom Kiri: Daftar Thread Pelanggan (Admin Only) -->
         <?php if ($isAdmin): ?>
-            <aside class="chat-thread-sidebar panel">
-                <div class="thread-search-box">
-                    <input type="text" id="filterCustomerInput" placeholder="Cari pelanggan..." onkeyup="filterCustomers()">
-                </div>
-                <div class="thread-list-scroll" id="customerListScroll">
-                    <?php if (!$customers): ?>
-                        <p class="empty-hint-text">Belum ada pelanggan terdaftar.</p>
-                    <?php else: ?>
-                        <?php foreach ($customers as $cItem): ?>
-                            <?php $isAct = ((int) $cItem['id'] === $selectedCustomer); ?>
-                            <a class="thread-user-item <?= $isAct ? 'is-active' : '' ?>" href="<?= e(app_url('chat.php?customer=' . (int) $cItem['id'])) ?>">
-                                <div class="thread-user-avatar"><?= strtoupper(substr($cItem['name'], 0, 1)) ?></div>
-                                <div class="thread-user-text">
-                                    <strong class="user-item-name"><?= e($cItem['name']) ?></strong>
-                                    <small><?= e($cItem['email']) ?></small>
-                                    <?php if ($cItem['latest_message']): ?>
-                                        <span class="thread-time"><?= date('d M, H:i', strtotime($cItem['latest_message'])) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </aside>
+        <aside class="chat-thread-sidebar panel">
+            <div class="thread-search-box">
+                <input type="text" id="filterCustomerInput" placeholder="Cari pelanggan..." onkeyup="filterCustomers()">
+            </div>
+            <div class="thread-list-scroll" id="customerListScroll">
+                <?php if (!$customers): ?>
+                <p class="empty-hint-text">Belum ada pelanggan terdaftar.</p>
+                <?php else: ?>
+                <?php foreach ($customers as $cItem): ?>
+                <?php $isAct = ((int) $cItem['id'] === $selectedCustomer); ?>
+                <a class="thread-user-item <?= $isAct ? 'is-active' : '' ?>"
+                    href="<?= e(app_url('chat.php?customer=' . (int) $cItem['id'])) ?>">
+                    <div class="thread-user-avatar"><?= strtoupper(substr($cItem['name'], 0, 1)) ?></div>
+                    <div class="thread-user-text">
+                        <strong class="user-item-name"><?= e($cItem['name']) ?></strong>
+                        <small><?= e($cItem['email']) ?></small>
+                        <?php if ($cItem['latest_message']): ?>
+                        <span class="thread-time"><?= date('d M, H:i', strtotime($cItem['latest_message'])) ?></span>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </aside>
         <?php endif; ?>
 
-        <!-- Kolom Tengah: Ruang Obrolan & Panel Negosiasi -->
         <section class="chat-conversation-panel panel">
             <header class="chat-room-header">
                 <div>
@@ -164,136 +156,138 @@ if ($isAdmin) {
                     <small>Pre-order Kue Lebaran Rumahan Medan</small>
                 </div>
                 <?php if ($latestOrder): ?>
-                    <span class="chat-order-pill">Pesanan #<?= e(order_code($latestOrder)) ?></span>
+                <span class="chat-order-pill">Pesanan #<?= e(order_code($latestOrder)) ?></span>
                 <?php endif; ?>
             </header>
 
-            <!-- Box Form Negosiasi Khusus Admin Sesuai Gambar 3.30 & Request User -->
             <?php if ($isAdmin && $latestOrder): ?>
-                <div class="negotiation-action-bar">
-                    <!-- Form 1: Atur Ongkir Final -->
-                    <form method="post" class="nego-inline-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="set_shipping">
-                        <input type="hidden" name="order_id" value="<?= (int) $latestOrder['id'] ?>">
-                        <label>
-                            <span>Ongkir final (Rp)</span>
-                            <input type="number" name="shipping_fee" value="<?= (int) ($latestOrder['shipping_fee'] ?? 0) ?>" step="1000" min="0" required>
-                        </label>
-                        <button type="submit" class="button button-solid-black button-small">Terapkan Ongkir</button>
-                    </form>
+            <div class="negotiation-action-bar">
+                <form method="post" class="nego-inline-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="set_shipping">
+                    <input type="hidden" name="order_id" value="<?= (int) $latestOrder['id'] ?>">
+                    <label>
+                        <span>Ongkir final (Rp)</span>
+                        <input type="number" name="shipping_fee"
+                            value="<?= (int) ($latestOrder['shipping_fee'] ?? 0) ?>" step="1000" min="0" required>
+                    </label>
+                    <button type="submit" class="button button-solid-black button-small">Terapkan Ongkir</button>
+                </form>
 
-                    <!-- Form 2: Penyesuaian Jadwal Pengiriman (Jika Pesanan Banyak / Antrean Padat) -->
-                    <form method="post" class="nego-inline-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="adjust_delivery_date">
-                        <input type="hidden" name="order_id" value="<?= (int) $latestOrder['id'] ?>">
-                        <label>
-                            <span>Jadwal baru (kesepakatan chat)</span>
-                            <input type="date" name="delivery_date" value="<?= e($latestOrder['delivery_date'] ?? date('Y-m-d', strtotime('+3 days'))) ?>" required>
-                        </label>
-                        <button type="submit" class="button button-outline-dark button-small">Perbarui Jadwal</button>
-                    </form>
-                </div>
+                <form method="post" class="nego-inline-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="adjust_delivery_date">
+                    <input type="hidden" name="order_id" value="<?= (int) $latestOrder['id'] ?>">
+                    <label>
+                        <span>Jadwal baru (kesepakatan chat)</span>
+                        <input type="date" name="delivery_date"
+                            value="<?= e($latestOrder['delivery_date'] ?? date('Y-m-d', strtotime('+3 days'))) ?>"
+                            required>
+                    </label>
+                    <button type="submit" class="button button-outline-dark button-small">Perbarui Jadwal</button>
+                </form>
+            </div>
             <?php endif; ?>
 
-            <!-- Riwayat Pesan Bubble -->
             <div class="chat-messages-container" id="chatBox">
                 <?php if (!$messages): ?>
-                    <div class="chat-empty-start">
-                        <p>Belum ada percakapan. Sapa untuk memulai negosiasi ongkir dan jadwal pre-order.</p>
-                    </div>
+                <div class="chat-empty-start">
+                    <p>Belum ada percakapan. Sapa untuk memulai negosiasi ongkir dan jadwal pre-order.</p>
+                </div>
                 <?php endif; ?>
 
                 <?php foreach ($messages as $msg): ?>
-                    <?php
+                <?php
                     $isOwn = ($isAdmin && $msg['sender_role'] === 'admin') || (!$isAdmin && $msg['sender_role'] === 'customer');
                     $senderLabel = $isOwn ? 'Anda' : ($isAdmin ? ($msg['customer_name'] ?? 'Pelanggan') : 'Admin Sanggar Tresno');
                     ?>
-                    <article class="chat-bubble-row <?= $isOwn ? 'is-own' : 'is-other' ?>">
-                        <div class="chat-bubble-content">
-                            <p class="bubble-text"><?= nl2br(e($msg['body'])) ?></p>
-                            <span class="bubble-meta"><?= e($senderLabel) ?> &bull; <?= date('H:i', strtotime($msg['created_at'])) ?></span>
-                        </div>
-                    </article>
+                <article class="chat-bubble-row <?= $isOwn ? 'is-own' : 'is-other' ?>">
+                    <div class="chat-bubble-content">
+                        <p class="bubble-text"><?= nl2br(e($msg['body'])) ?></p>
+                        <span class="bubble-meta"><?= e($senderLabel) ?> &bull;
+                            <?= date('H:i', strtotime($msg['created_at'])) ?></span>
+                    </div>
+                </article>
                 <?php endforeach; ?>
             </div>
 
-            <!-- Compose Box -->
             <form class="chat-compose-form" method="post" action="<?= e(app_url('chat.php')) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="send_message">
                 <?php if ($isAdmin): ?>
-                    <input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer ?>">
+                <input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer ?>">
                 <?php endif; ?>
-                <textarea name="body" placeholder="Tulis pesan negosiasi atau pertanyaan..." required maxlength="2000" rows="2" aria-label="Tulis pesan"></textarea>
+                <textarea name="body" placeholder="Tulis pesan negosiasi atau pertanyaan..." required maxlength="2000"
+                    rows="2" aria-label="Tulis pesan"></textarea>
                 <button class="button button-solid-black" type="submit">Kirim</button>
             </form>
         </section>
 
-        <!-- Kolom Kanan: Pesanan Terkait (Sesuai Gambar 3.30 & 3.40) -->
         <?php if ($latestOrder): ?>
-            <aside class="chat-order-aside panel">
-                <h3>Pesanan terkait</h3>
-                <p class="order-reference">#<?= e(order_code($latestOrder)) ?></p>
+        <aside class="chat-order-aside panel">
+            <h3>Pesanan terkait</h3>
+            <p class="order-reference">#<?= e(order_code($latestOrder)) ?></p>
 
-                <div class="order-aside-badge-row">
-                    <span class="status-badge-clean status-<?= e($latestOrder['payment_status']) ?>">
-                        <?= e(payment_status_label($latestOrder['payment_status'])) ?>
-                    </span>
-                    <span class="status-badge-clean status-<?= e($latestOrder['status']) ?>">
-                        <?= e(order_status_label($latestOrder['status'])) ?>
-                    </span>
+            <div class="order-aside-badge-row">
+                <span class="status-badge-clean status-<?= e($latestOrder['payment_status']) ?>">
+                    <?= e(payment_status_label($latestOrder['payment_status'])) ?>
+                </span>
+                <span class="status-badge-clean status-<?= e($latestOrder['status']) ?>">
+                    <?= e(order_status_label($latestOrder['status'])) ?>
+                </span>
+            </div>
+
+            <div class="chat-order-items-mini">
+                <?php foreach ($orderItems as $oItem): ?>
+                <div class="order-mini-row">
+                    <span><?= e($oItem['product_name']) ?> &times; <?= (int) $oItem['quantity'] ?></span>
+                    <span><?= rupiah((float) $oItem['price'] * (int) $oItem['quantity']) ?></span>
                 </div>
+                <?php endforeach; ?>
+            </div>
 
-                <div class="chat-order-items-mini">
-                    <?php foreach ($orderItems as $oItem): ?>
-                        <div class="order-mini-row">
-                            <span><?= e($oItem['product_name']) ?> &times; <?= (int) $oItem['quantity'] ?></span>
-                            <span><?= rupiah((float) $oItem['price'] * (int) $oItem['quantity']) ?></span>
-                        </div>
-                    <?php endforeach; ?>
+            <div class="chat-order-calc-table">
+                <div class="calc-row">
+                    <span>Produk</span>
+                    <span><?= rupiah($latestOrder['total']) ?></span>
                 </div>
-
-                <div class="chat-order-calc-table">
-                    <div class="calc-row">
-                        <span>Produk</span>
-                        <span><?= rupiah($latestOrder['total']) ?></span>
-                    </div>
-                    <div class="calc-row">
-                        <span>Ongkir final</span>
-                        <strong><?= !empty($latestOrder['shipping_fee']) ? rupiah($latestOrder['shipping_fee']) : 'Dinegosiasikan' ?></strong>
-                    </div>
-                    <div class="calc-row calc-total">
-                        <span>Total pesanan</span>
-                        <span><?= rupiah((float) $latestOrder['total'] + (int) ($latestOrder['shipping_fee'] ?? 0)) ?></span>
-                    </div>
-                    <div class="calc-row">
-                        <span>DP 50%</span>
-                        <strong><?= rupiah($latestOrder['dp_amount']) ?></strong>
-                    </div>
-                    <div class="calc-row">
-                        <span>Sisa pelunasan</span>
-                        <span><?= rupiah(max(0, (float) $latestOrder['total'] + (int) ($latestOrder['shipping_fee'] ?? 0) - (float) $latestOrder['dp_amount'])) ?></span>
-                    </div>
+                <div class="calc-row">
+                    <span>Ongkir final</span>
+                    <strong><?= !empty($latestOrder['shipping_fee']) ? rupiah($latestOrder['shipping_fee']) : 'Dinegosiasikan' ?></strong>
                 </div>
-
-                <div class="chat-order-address-box">
-                    <strong>Tujuan Pengantaran</strong>
-                    <p><?= nl2br(e($latestOrder['address'])) ?></p>
-                    <small>Jadwal: <?= e(indo_date($latestOrder['delivery_date'] ?? date('Y-m-d', strtotime('+3 days')))) ?></small>
+                <div class="calc-row calc-total">
+                    <span>Total pesanan</span>
+                    <span><?= rupiah((float) $latestOrder['total'] + (int) ($latestOrder['shipping_fee'] ?? 0)) ?></span>
                 </div>
+                <div class="calc-row">
+                    <span>DP 50%</span>
+                    <strong><?= rupiah($latestOrder['dp_amount']) ?></strong>
+                </div>
+                <div class="calc-row">
+                    <span>Sisa pelunasan</span>
+                    <span><?= rupiah(max(0, (float) $latestOrder['total'] + (int) ($latestOrder['shipping_fee'] ?? 0) - (float) $latestOrder['dp_amount'])) ?></span>
+                </div>
+            </div>
 
-                <?php if ($isAdmin): ?>
-                    <a class="button button-outline-dark button-full button-small" href="<?= e(app_url('admin/kelola_orders.php?order=' . (int) $latestOrder['id'])) ?>">
-                        Buka di Kelola Pesanan &rarr;
-                    </a>
-                <?php else: ?>
-                    <a class="button button-outline-dark button-full button-small" href="<?= e(app_url('order_detail.php?id=' . (int) $latestOrder['id'])) ?>">
-                        Lihat Rincian Lengkap &rarr;
-                    </a>
-                <?php endif; ?>
-            </aside>
+            <div class="chat-order-address-box">
+                <strong>Tujuan Pengantaran</strong>
+                <p><?= nl2br(e($latestOrder['address'])) ?></p>
+                <small>Jadwal:
+                    <?= e(indo_date($latestOrder['delivery_date'] ?? date('Y-m-d', strtotime('+3 days')))) ?></small>
+            </div>
+
+            <?php if ($isAdmin): ?>
+            <a class="button button-outline-dark button-full button-small"
+                href="<?= e(app_url('admin/kelola_orders.php?order=' . (int) $latestOrder['id'])) ?>">
+                Buka di Kelola Pesanan &rarr;
+            </a>
+            <?php else: ?>
+            <a class="button button-outline-dark button-full button-small"
+                href="<?= e(app_url('order_detail.php?id=' . (int) $latestOrder['id'])) ?>">
+                Lihat Rincian Lengkap &rarr;
+            </a>
+            <?php endif; ?>
+        </aside>
         <?php endif; ?>
     </div>
 </main>
@@ -308,7 +302,6 @@ function filterCustomers() {
     });
 }
 
-// Auto scroll ke bawah di chat box
 window.addEventListener('DOMContentLoaded', () => {
     const box = document.getElementById('chatBox');
     if (box) {

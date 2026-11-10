@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require __DIR__ . '/config.php';
 
-// Menangani penambahan ke keranjang langsung jika ada
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'add') {
     verify_csrf();
     $productId = filter_var($_POST['product_id'] ?? null, FILTER_VALIDATE_INT);
@@ -65,7 +64,6 @@ $currentNav = 'menu';
 require __DIR__ . '/includes/header.php';
 ?>
 <main class="page-shell">
-    <!-- Header Bagian Katalog Sesuai Gambar 3.23 & 3.33 -->
     <div class="catalog-header-wrap">
         <div class="catalog-header-left">
             <p class="eyebrow">DAPUR SELA RASA / MEDAN</p>
@@ -83,73 +81,80 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- Filter & Pencarian Sesuai Gambar 3.23 & 3.33 -->
     <div class="catalog-toolbar">
         <form class="search-form-clean" method="get" action="<?= e(app_url('index.php')) ?>">
             <div class="search-input-wrapper">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="search" name="q" placeholder="Cari produk..." value="<?= e($search) ?>" aria-label="Cari produk">
+                <input type="search" name="q" placeholder="Cari produk..." value="<?= e($search) ?>"
+                    aria-label="Cari produk">
             </div>
             <?php if ($category !== 'semua'): ?>
-                <input type="hidden" name="category" value="<?= e($category) ?>">
+            <input type="hidden" name="category" value="<?= e($category) ?>">
             <?php endif; ?>
         </form>
 
         <div class="catalog-category-filter">
             <div class="category-tabs-clean">
-                <a href="?category=semua<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'semua' ? 'is-active' : '' ?>">Semua</a>
-                <a href="?category=minuman<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'minuman' ? 'is-active' : '' ?>">Minuman</a>
-                <a href="?category=makanan<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'makanan' ? 'is-active' : '' ?>">Makanan</a>
+                <a href="?category=semua<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>"
+                    class="tab-clean <?= $category === 'semua' ? 'is-active' : '' ?>">Semua</a>
+                <a href="?category=minuman<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>"
+                    class="tab-clean <?= $category === 'minuman' ? 'is-active' : '' ?>">Minuman</a>
+                <a href="?category=makanan<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>"
+                    class="tab-clean <?= $category === 'makanan' ? 'is-active' : '' ?>">Makanan</a>
             </div>
             <span class="category-count-label"><?= count($products) ?> produk &bull; Harga per porsi / kemasan</span>
         </div>
     </div>
 
-    <!-- Product Grid 4 Kolom di Desktop, 1 Kolom di Mobile -->
     <section class="products-grid-container" id="koleksi">
         <?php if (!$products): ?>
-            <div class="panel empty-catalog-state">
-                <p>Belum ada produk yang cocok dengan pencarian "<strong><?= e($search) ?></strong>".</p>
-                <a class="button button-outline-dark" href="<?= e(app_url('index.php')) ?>">Tampilkan semua produk</a>
-            </div>
+        <div class="panel empty-catalog-state">
+            <p>Belum ada produk yang cocok dengan pencarian "<strong><?= e($search) ?></strong>".</p>
+            <a class="button button-outline-dark" href="<?= e(app_url('index.php')) ?>">Tampilkan semua produk</a>
+        </div>
         <?php endif; ?>
 
         <div class="products-quad-grid">
             <?php foreach ($products as $index => $product): ?>
-                <?php
+            <?php
                 $isFav = ($index === 0);
                 $tagLabel = $isFav ? 'Favorit' : 'Pre-order';
                 $tagClass = $isFav ? 'tag-favorite' : 'tag-preorder';
                 ?>
-                <article class="product-card-clean">
-                    <div class="product-card-thumb">
-                        <span class="product-tag-pill <?= $tagClass ?>"><?= e($tagLabel) ?></span>
-                        <a href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
-                            <img src="<?= e(asset_url($product['image_url'] ?: 'assets/product-nastar.png')) ?>" alt="<?= e($product['name']) ?>" loading="lazy">
+            <article class="product-card-clean">
+                <div class="product-card-thumb">
+                    <span class="product-tag-pill <?= $tagClass ?>"><?= e($tagLabel) ?></span>
+                    <a href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
+                        <img src="<?= e(asset_url($product['image_url'] ?: 'assets/product-nastar.png')) ?>"
+                            alt="<?= e($product['name']) ?>" loading="lazy">
+                    </a>
+                </div>
+                <div class="product-card-content">
+                    <h2 class="product-card-name">
+                        <a
+                            href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>"><?= e($product['name']) ?></a>
+                    </h2>
+                    <p class="product-card-desc">
+                        <?= e($product['description'] ?: 'Dibuat segar sesuai pesanan dengan resep rumahan khas Medan.') ?>
+                    </p>
+                    <p class="product-card-unit"><?= e($product['category'] ?? 'toples') ?></p>
+                    <div class="product-card-foot">
+                        <strong class="product-card-price"><?= rupiah($product['price']) ?></strong>
+                        <a class="product-card-link-btn"
+                            href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
+                            Lihat produk <span class="arrow-icon">&#8599;</span>
                         </a>
                     </div>
-                    <div class="product-card-content">
-                        <h2 class="product-card-name">
-                            <a href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>"><?= e($product['name']) ?></a>
-                        </h2>
-                        <p class="product-card-desc"><?= e($product['description'] ?: 'Dibuat segar sesuai pesanan dengan resep rumahan khas Medan.') ?></p>
-                        <p class="product-card-unit"><?= e($product['category'] ?? 'toples') ?></p>
-                        <div class="product-card-foot">
-                            <strong class="product-card-price"><?= rupiah($product['price']) ?></strong>
-                            <a class="product-card-link-btn" href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
-                                Lihat produk <span class="arrow-icon">&#8599;</span>
-                            </a>
-                        </div>
-                    </div>
-                </article>
+                </div>
+            </article>
             <?php endforeach; ?>
         </div>
     </section>
 
-    <!-- 3 Langkah Pemesanan Sesuai Bagian Bawah Gambar 3.23 & 3.33 -->
     <section class="how-to-order-steps" id="cara-pesan">
         <div class="step-card-clean">
             <span class="step-card-num">01</span>

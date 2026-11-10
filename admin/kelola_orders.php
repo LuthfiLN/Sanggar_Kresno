@@ -9,7 +9,6 @@ $pdo = db();
 $allowedStatuses = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
 $error = '';
 
-// Menangani Update Pesanan oleh Admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
@@ -31,12 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Pesanan tidak ditemukan.');
             }
 
-            // Jika status DP dibayar tetapi status masih pending, ubah otomatis jadi processing
             if ($paymentStatus === 'dp_paid' && $status === 'pending') {
                 $status = 'processing';
             }
 
-            // Restorasi stok jika dibatalkan
             if ($currentOrder['status'] !== 'cancelled' && $status === 'cancelled') {
                 $itemsQuery = $pdo->prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ? AND product_id IS NOT NULL');
                 $itemsQuery->execute([$orderId]);
@@ -46,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Update status, status pembayaran, jadwal pengiriman baru, dan ongkir
             $update = $pdo->prepare('UPDATE orders SET status = ?, payment_status = ?, delivery_date = COALESCE(?, delivery_date), shipping_fee = ? WHERE id = ?');
             $update->execute([$status, $paymentStatus, $deliveryDateInput !== '' ? $deliveryDateInput : null, $shippingFee, $orderId]);
 
@@ -63,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Filter tab: 'semua', 'dp_paid', 'pending'
 $tab = (string) ($_GET['tab'] ?? 'semua');
 $search = trim((string) ($_GET['q'] ?? ''));
 $filterDate = trim((string) ($_GET['date'] ?? ''));
@@ -95,12 +90,10 @@ $ordersQuery = $pdo->prepare("SELECT o.*, u.name AS customer_name, u.email AS cu
 $ordersQuery->execute($params);
 $orders = $ordersQuery->fetchAll();
 
-// Hitung total tab
 $totalAll = (int) $pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
 $totalDpPaid = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE payment_status IN ('dp_paid', 'paid')")->fetchColumn();
 $totalPending = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE payment_status = 'unpaid'")->fetchColumn();
 
-// Pesanan terpilih untuk panel detail (Right Panel)
 $selectedOrderId = filter_var($_GET['order'] ?? null, FILTER_VALIDATE_INT);
 $selectedOrder = null;
 $selectedOrderItems = [];
@@ -132,7 +125,6 @@ $adminActive = 'orders';
 require dirname(__DIR__) . '/includes/admin_header.php';
 ?>
 <main class="admin-page-wrap">
-    <!-- Header Halaman Kelola Pesanan Sesuai Gambar 3.28 & 3.38 -->
     <div class="panel-header-row kelola-orders-header">
         <div>
             <p class="eyebrow">RUANG ADMIN / PESANAN</p>
@@ -145,34 +137,36 @@ require dirname(__DIR__) . '/includes/admin_header.php';
     </div>
 
     <?php if ($error): ?>
-        <div class="notice notice-error"><?= e($error) ?></div>
+    <div class="notice notice-error"><?= e($error) ?></div>
     <?php endif; ?>
 
-    <!-- Filter Bar: Tabs Status, Pencarian, & Tanggal Pemenuhan -->
     <div class="orders-filter-container">
         <div class="filter-tabs-row">
-            <a href="?tab=semua" class="tab-chip <?= $tab === 'semua' ? 'is-active' : '' ?>">Semua &bull; <?= $totalAll ?></a>
-            <a href="?tab=dp_paid" class="tab-chip <?= $tab === 'dp_paid' ? 'is-active' : '' ?>">DP Paid &bull; <?= $totalDpPaid ?></a>
-            <a href="?tab=pending" class="tab-chip <?= $tab === 'pending' ? 'is-active' : '' ?>">Pending &bull; <?= $totalPending ?></a>
+            <a href="?tab=semua" class="tab-chip <?= $tab === 'semua' ? 'is-active' : '' ?>">Semua &bull;
+                <?= $totalAll ?></a>
+            <a href="?tab=dp_paid" class="tab-chip <?= $tab === 'dp_paid' ? 'is-active' : '' ?>">DP Paid &bull;
+                <?= $totalDpPaid ?></a>
+            <a href="?tab=pending" class="tab-chip <?= $tab === 'pending' ? 'is-active' : '' ?>">Pending &bull;
+                <?= $totalPending ?></a>
         </div>
 
         <form class="orders-search-grid" method="get">
             <input type="hidden" name="tab" value="<?= e($tab) ?>">
             <div class="search-input-field">
                 <label for="search-input">Cari pesanan</label>
-                <input id="search-input" type="text" name="q" placeholder="Nama atau nomor pesanan..." value="<?= e($search) ?>">
+                <input id="search-input" type="text" name="q" placeholder="Nama atau nomor pesanan..."
+                    value="<?= e($search) ?>">
             </div>
             <div class="search-input-field">
                 <label for="date-input">Tanggal pemenuhan</label>
-                <input id="date-input" type="date" name="date" value="<?= e($filterDate) ?>" onchange="this.form.submit()">
+                <input id="date-input" type="date" name="date" value="<?= e($filterDate) ?>"
+                    onchange="this.form.submit()">
             </div>
             <button type="submit" class="button button-solid-black button-small align-end-btn">Filter</button>
         </form>
     </div>
 
-    <!-- Layout Master-Detail 2 Kolom Sesuai Gambar 3.28 & 3.38 -->
     <div class="orders-master-detail-grid">
-        <!-- Kolom Kiri: Tabel / Daftar Pesanan Masuk -->
         <div class="orders-list-col">
             <section class="panel admin-panel-box">
                 <h2 class="section-clean-title">Daftar pesanan</h2>
@@ -190,37 +184,39 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                         </thead>
                         <tbody>
                             <?php if (!$orders): ?>
-                                <tr>
-                                    <td colspan="5" class="empty-table-cell">Tidak ada pesanan yang sesuai filter.</td>
-                                </tr>
+                            <tr>
+                                <td colspan="5" class="empty-table-cell">Tidak ada pesanan yang sesuai filter.</td>
+                            </tr>
                             <?php endif; ?>
                             <?php foreach ($orders as $ord): ?>
-                                <?php
+                            <?php
                                 $isCur = ($selectedOrder && (int) $ord['id'] === (int) $selectedOrder['id']);
                                 $isPaid = in_array($ord['payment_status'], ['dp_paid', 'paid'], true);
                                 ?>
-                                <tr class="<?= $isCur ? 'tr-selected' : '' ?>">
-                                    <td>
-                                        <strong>#<?= sprintf('%03d', $ord['id']) ?></strong>
-                                    </td>
-                                    <td>
-                                        <strong><?= e($ord['recipient_name'] ?: $ord['customer_name']) ?></strong>
-                                        <small class="cell-sub-item">Antar: <?= $ord['delivery_date'] ? e(indo_date($ord['delivery_date'])) : 'Menunggu jadwal' ?></small>
-                                    </td>
-                                    <td>
-                                        <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
-                                            <?= $isPaid ? 'DP Paid' : 'Pending' ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <strong><?= rupiah((float) $ord['total'] + (int) ($ord['shipping_fee'] ?? 0)) ?></strong>
-                                    </td>
-                                    <td>
-                                        <a class="button button-outline-dark button-small <?= $isCur ? 'button-active' : '' ?>" href="kelola_orders.php?tab=<?= e($tab) ?>&order=<?= (int) $ord['id'] ?>&q=<?= urlencode($search) ?>&date=<?= urlencode($filterDate) ?>">
-                                            <?= $isCur ? 'Terpilih' : 'Detail' ?>
-                                        </a>
-                                    </td>
-                                </tr>
+                            <tr class="<?= $isCur ? 'tr-selected' : '' ?>">
+                                <td>
+                                    <strong>#<?= sprintf('%03d', $ord['id']) ?></strong>
+                                </td>
+                                <td>
+                                    <strong><?= e($ord['recipient_name'] ?: $ord['customer_name']) ?></strong>
+                                    <small class="cell-sub-item">Antar:
+                                        <?= $ord['delivery_date'] ? e(indo_date($ord['delivery_date'])) : 'Menunggu jadwal' ?></small>
+                                </td>
+                                <td>
+                                    <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
+                                        <?= $isPaid ? 'DP Paid' : 'Pending' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong><?= rupiah((float) $ord['total'] + (int) ($ord['shipping_fee'] ?? 0)) ?></strong>
+                                </td>
+                                <td>
+                                    <a class="button button-outline-dark button-small <?= $isCur ? 'button-active' : '' ?>"
+                                        href="kelola_orders.php?tab=<?= e($tab) ?>&order=<?= (int) $ord['id'] ?>&q=<?= urlencode($search) ?>&date=<?= urlencode($filterDate) ?>">
+                                        <?= $isCur ? 'Terpilih' : 'Detail' ?>
+                                    </a>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -228,143 +224,144 @@ require dirname(__DIR__) . '/includes/admin_header.php';
             </section>
         </div>
 
-        <!-- Kolom Kanan: Detail & Form Pengaturan Pesanan Terpilih -->
         <div class="orders-detail-col">
             <?php if ($selectedOrder): ?>
-                <?php
+            <?php
                 $orderCode = order_code($selectedOrder);
                 $isDpPaid = in_array($selectedOrder['payment_status'], ['dp_paid', 'paid'], true);
                 $totalWithShip = (float) $selectedOrder['total'] + (int) ($selectedOrder['shipping_fee'] ?? 0);
                 $remainingVal = max(0.0, $totalWithShip - (float) $selectedOrder['dp_amount']);
                 ?>
-                <section class="panel admin-panel-box order-detail-card-panel">
-                    <!-- Header Rincian Pesanan Terpilih Sesuai Gambar 3.28 -->
-                    <div class="selected-order-header">
-                        <div>
-                            <span class="sel-order-code">#<?= e($orderCode) ?></span>
-                            <div class="sel-tags-row">
-                                <span class="badge-dp-tag <?= $isDpPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
-                                    <?= $isDpPaid ? 'DP Paid' : 'Pending' ?>
-                                </span>
-                                <span class="status-badge-clean status-<?= e($selectedOrder['status']) ?>">
-                                    <?= e(order_status_label($selectedOrder['status'])) ?>
-                                </span>
-                            </div>
+            <section class="panel admin-panel-box order-detail-card-panel">
+                <div class="selected-order-header">
+                    <div>
+                        <span class="sel-order-code">#<?= e($orderCode) ?></span>
+                        <div class="sel-tags-row">
+                            <span class="badge-dp-tag <?= $isDpPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
+                                <?= $isDpPaid ? 'DP Paid' : 'Pending' ?>
+                            </span>
+                            <span class="status-badge-clean status-<?= e($selectedOrder['status']) ?>">
+                                <?= e(order_status_label($selectedOrder['status'])) ?>
+                            </span>
                         </div>
                     </div>
-
-                    <div class="sel-customer-profile">
-                        <h3><?= e($selectedOrder['recipient_name'] ?: $selectedOrder['customer_name']) ?></h3>
-                        <p><?= e($selectedOrder['phone']) ?> &bull; Dibuat <?= indo_date($selectedOrder['created_at']) ?></p>
-                    </div>
-
-                    <!-- Items List -->
-                    <div class="sel-items-list">
-                        <?php foreach ($selectedOrderItems as $sItem): ?>
-                            <div class="sel-item-row">
-                                <div>
-                                    <strong><?= e($sItem['product_name']) ?></strong>
-                                    <small><?= (int) $sItem['quantity'] ?> toples &times; <?= rupiah($sItem['price']) ?></small>
-                                </div>
-                                <strong><?= rupiah((float) $sItem['price'] * (int) $sItem['quantity']) ?></strong>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Perhitungan Keuangan -->
-                    <div class="sel-calc-summary">
-                        <div class="calc-row">
-                            <span>Subtotal</span>
-                            <span><?= rupiah($selectedOrder['total']) ?></span>
-                        </div>
-                        <div class="calc-row">
-                            <span>Ongkir disepakati</span>
-                            <span><?= !empty($selectedOrder['shipping_fee']) ? rupiah($selectedOrder['shipping_fee']) : 'Rp 0' ?></span>
-                        </div>
-                        <div class="calc-row calc-total">
-                            <span>Total</span>
-                            <strong><?= rupiah($totalWithShip) ?></strong>
-                        </div>
-                        <div class="calc-row dp-row">
-                            <span>DP diterima &bull; 50%</span>
-                            <strong><?= $isDpPaid ? rupiah($selectedOrder['dp_amount']) : 'Rp 0' ?></strong>
-                        </div>
-                        <div class="calc-row remaining-row">
-                            <span>Sisa pelunasan</span>
-                            <strong><?= rupiah($remainingVal) ?></strong>
-                        </div>
-                    </div>
-
-                    <div class="quick-reminder-row">
-                        <a class="button button-outline-dark button-full button-small" href="../chat.php?customer=<?= (int) $selectedOrder['user_id'] ?>">
-                            &#128172; Buka chat / Kirim pengingat ke pelanggan
-                        </a>
-                    </div>
-
-                    <!-- Tujuan & Pemenuhan Sesuai Gambar 3.28 -->
-                    <div class="sel-fulfillment-section">
-                        <h4>Tujuan &amp; pemenuhan</h4>
-                        <p class="fulfillment-dest">
-                            <strong><?= e($selectedOrder['address']) ?></strong><br>
-                            <?php if ($selectedOrder['notes']): ?>
-                                <small>Catatan: "<?= e($selectedOrder['notes']) ?>"</small>
-                            <?php endif; ?>
-                        </p>
-
-                        <!-- FORM PENYESUAIAN OLEH ADMIN (Permintaan Utama Pengguna) -->
-                        <form method="post" class="form-stack admin-order-update-form">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-
-                            <!-- Penyesuaian Jadwal Pengiriman Baru oleh Admin -->
-                            <div class="form-group-clean">
-                                <label for="delivery-date-input">
-                                    <strong>Jadwal pengiriman baru</strong>
-                                    <small>(Bisa disesuaikan admin jika antrean dapur padat setelah chat)</small>
-                                </label>
-                                <input id="delivery-date-input" type="date" name="delivery_date" value="<?= e($selectedOrder['delivery_date'] ?? '') ?>" required>
-                            </div>
-
-                            <!-- Atur Ongkir Final (Rp) -->
-                            <div class="form-group-clean">
-                                <label for="shipping-fee-input">
-                                    <strong>Atur Ongkir Final (Rp)</strong>
-                                </label>
-                                <input id="shipping-fee-input" type="number" name="shipping_fee" value="<?= (int) ($selectedOrder['shipping_fee'] ?? 0) ?>" min="0" step="1000">
-                            </div>
-
-                            <!-- Status Pemenuhan Produksi -->
-                            <div class="form-group-clean">
-                                <label for="status-select"><strong>Status pemenuhan</strong></label>
-                                <select id="status-select" name="status">
-                                    <?php foreach ($allowedStatuses as $st): ?>
-                                        <option value="<?= e($st) ?>" <?= $selectedOrder['status'] === $st ? 'selected' : '' ?>>
-                                            <?= e(order_status_label($st)) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <!-- Status Pembayaran DP & Pelunasan -->
-                            <div class="form-group-clean">
-                                <label for="payment-status-select"><strong>Status pembayaran</strong></label>
-                                <select id="payment-status-select" name="payment_status">
-                                    <option value="unpaid" <?= $selectedOrder['payment_status'] === 'unpaid' ? 'selected' : '' ?>>DP 50% belum dibayar</option>
-                                    <option value="dp_paid" <?= $selectedOrder['payment_status'] === 'dp_paid' ? 'selected' : '' ?>>DP 50% terverifikasi</option>
-                                    <option value="paid" <?= $selectedOrder['payment_status'] === 'paid' ? 'selected' : '' ?>>Lunas 100%</option>
-                                </select>
-                            </div>
-
-                            <button class="button button-solid-black button-full" type="submit">
-                                &#10003; Simpan status &amp; jadwal baru
-                            </button>
-                        </form>
-                    </div>
-                </section>
-            <?php else: ?>
-                <div class="panel empty-select-box">
-                    <p>Pilih pesanan dari daftar di sebelah kiri untuk melihat detail dan melakukan penyesuaian jadwal.</p>
                 </div>
+
+                <div class="sel-customer-profile">
+                    <h3><?= e($selectedOrder['recipient_name'] ?: $selectedOrder['customer_name']) ?></h3>
+                    <p><?= e($selectedOrder['phone']) ?> &bull; Dibuat <?= indo_date($selectedOrder['created_at']) ?>
+                    </p>
+                </div>
+
+                <!-- Items List -->
+                <div class="sel-items-list">
+                    <?php foreach ($selectedOrderItems as $sItem): ?>
+                    <div class="sel-item-row">
+                        <div>
+                            <strong><?= e($sItem['product_name']) ?></strong>
+                            <small><?= (int) $sItem['quantity'] ?> toples &times; <?= rupiah($sItem['price']) ?></small>
+                        </div>
+                        <strong><?= rupiah((float) $sItem['price'] * (int) $sItem['quantity']) ?></strong>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="sel-calc-summary">
+                    <div class="calc-row">
+                        <span>Subtotal</span>
+                        <span><?= rupiah($selectedOrder['total']) ?></span>
+                    </div>
+                    <div class="calc-row">
+                        <span>Ongkir disepakati</span>
+                        <span><?= !empty($selectedOrder['shipping_fee']) ? rupiah($selectedOrder['shipping_fee']) : 'Rp 0' ?></span>
+                    </div>
+                    <div class="calc-row calc-total">
+                        <span>Total</span>
+                        <strong><?= rupiah($totalWithShip) ?></strong>
+                    </div>
+                    <div class="calc-row dp-row">
+                        <span>DP diterima &bull; 50%</span>
+                        <strong><?= $isDpPaid ? rupiah($selectedOrder['dp_amount']) : 'Rp 0' ?></strong>
+                    </div>
+                    <div class="calc-row remaining-row">
+                        <span>Sisa pelunasan</span>
+                        <strong><?= rupiah($remainingVal) ?></strong>
+                    </div>
+                </div>
+
+                <div class="quick-reminder-row">
+                    <a class="button button-outline-dark button-full button-small"
+                        href="../chat.php?customer=<?= (int) $selectedOrder['user_id'] ?>">
+                        &#128172; Buka chat / Kirim pengingat ke pelanggan
+                    </a>
+                </div>
+
+                <div class="sel-fulfillment-section">
+                    <h4>Tujuan &amp; pemenuhan</h4>
+                    <p class="fulfillment-dest">
+                        <strong><?= e($selectedOrder['address']) ?></strong><br>
+                        <?php if ($selectedOrder['notes']): ?>
+                        <small>Catatan: "<?= e($selectedOrder['notes']) ?>"</small>
+                        <?php endif; ?>
+                    </p>
+
+                    <form method="post" class="form-stack admin-order-update-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+
+                        <div class="form-group-clean">
+                            <label for="delivery-date-input">
+                                <strong>Jadwal pengiriman baru</strong>
+                                <small>(Bisa disesuaikan admin jika antrean dapur padat setelah chat)</small>
+                            </label>
+                            <input id="delivery-date-input" type="date" name="delivery_date"
+                                value="<?= e($selectedOrder['delivery_date'] ?? '') ?>" required>
+                        </div>
+
+                        <div class="form-group-clean">
+                            <label for="shipping-fee-input">
+                                <strong>Atur Ongkir Final (Rp)</strong>
+                            </label>
+                            <input id="shipping-fee-input" type="number" name="shipping_fee"
+                                value="<?= (int) ($selectedOrder['shipping_fee'] ?? 0) ?>" min="0" step="1000">
+                        </div>
+
+                        <div class="form-group-clean">
+                            <label for="status-select"><strong>Status pemenuhan</strong></label>
+                            <select id="status-select" name="status">
+                                <?php foreach ($allowedStatuses as $st): ?>
+                                <option value="<?= e($st) ?>" <?= $selectedOrder['status'] === $st ? 'selected' : '' ?>>
+                                    <?= e(order_status_label($st)) ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group-clean">
+                            <label for="payment-status-select"><strong>Status pembayaran</strong></label>
+                            <select id="payment-status-select" name="payment_status">
+                                <option value="unpaid"
+                                    <?= $selectedOrder['payment_status'] === 'unpaid' ? 'selected' : '' ?>>DP 50% belum
+                                    dibayar</option>
+                                <option value="dp_paid"
+                                    <?= $selectedOrder['payment_status'] === 'dp_paid' ? 'selected' : '' ?>>DP 50%
+                                    terverifikasi</option>
+                                <option value="paid"
+                                    <?= $selectedOrder['payment_status'] === 'paid' ? 'selected' : '' ?>>Lunas 100%
+                                </option>
+                            </select>
+                        </div>
+
+                        <button class="button button-solid-black button-full" type="submit">
+                            &#10003; Simpan status &amp; jadwal baru
+                        </button>
+                    </form>
+                </div>
+            </section>
+            <?php else: ?>
+            <div class="panel empty-select-box">
+                <p>Pilih pesanan dari daftar di sebelah kiri untuk melihat detail dan melakukan penyesuaian jadwal.</p>
+            </div>
             <?php endif; ?>
         </div>
     </div>

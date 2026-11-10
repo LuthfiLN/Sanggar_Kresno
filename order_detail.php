@@ -26,20 +26,19 @@ $itemsQuery = $pdo->prepare('SELECT product_name, price, quantity FROM order_ite
 $itemsQuery->execute([$orderId]);
 $items = $itemsQuery->fetchAll();
 
-// Mapping status tahapan perjalanan pesanan (5 tahap sesuai Gambar 3.26)
 $isDpPaid = in_array($order['payment_status'], ['dp_paid', 'paid'], true);
 $isFullyPaid = $order['payment_status'] === 'paid';
 
-$stepStatus = 1; // 1: Pesanan dibuat
+$stepStatus = 1;
 if ($isDpPaid) {
-    $stepStatus = 2; // 2: DP diterima & diverifikasi
+    $stepStatus = 2;
 }
 if ($order['status'] === 'processing') {
-    $stepStatus = 3; // 3: Menunggu jadwal produksi / Sedang diproduksi
+    $stepStatus = 3;
 } elseif ($order['status'] === 'shipped') {
-    $stepStatus = 4; // 4: Dikirim ke alamatmu
+    $stepStatus = 4;
 } elseif ($order['status'] === 'completed') {
-    $stepStatus = 5; // 5: Pesanan diterima
+    $stepStatus = 5;
 }
 
 $orderCode = order_code($order);
@@ -62,14 +61,14 @@ require __DIR__ . '/includes/header.php';
         <span class="current-item">Pre-order #<?= e($orderCode) ?></span>
     </nav>
 
-    <!-- Banner Konfirmasi Header Sesuai Gambar 3.26 & 3.36 -->
     <div class="order-confirmed-banner">
         <div class="confirmed-left">
             <div class="confirmed-title-row">
                 <span class="confirmed-check">&#10003;</span>
                 <div>
                     <h1><?= $isDpPaid ? 'Pesananmu terkonfirmasi!' : 'Menunggu pembayaran DP' ?></h1>
-                    <p><?= $isDpPaid ? 'Terima kasih, ' . e($order['recipient_name']) . '. DP sudah diterima, sekarang giliran dapur kami menyiapkannya.' : 'Pesanan telah dicatat. Selesaikan pembayaran DP 50% untuk mengamankan slot batch produksi.' ?></p>
+                    <p><?= $isDpPaid ? 'Terima kasih, ' . e($order['recipient_name']) . '. DP sudah diterima, sekarang giliran dapur kami menyiapkannya.' : 'Pesanan telah dicatat. Selesaikan pembayaran DP 50% untuk mengamankan slot batch produksi.' ?>
+                    </p>
                 </div>
             </div>
         </div>
@@ -85,9 +84,7 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <div class="order-detail-layout-grid">
-        <!-- Kolom Kiri: Perjalanan Pesanan & Detail Produk / Alamat -->
         <div class="order-detail-main-stack">
-            <!-- Stepper Perjalanan Pesanan -->
             <section class="panel order-stepper-panel">
                 <h2 class="panel-inner-title">Perjalanan pesanan</h2>
 
@@ -100,17 +97,18 @@ require __DIR__ . '/includes/header.php';
                 </div>
 
                 <ol class="journey-stepper-list">
-                    <!-- Step 1: Pesanan Dibuat -->
-                    <li class="journey-step <?= $stepStatus >= 1 ? 'is-done' : '' ?> <?= $stepStatus === 1 ? 'is-current' : '' ?>">
+                    <li
+                        class="journey-step <?= $stepStatus >= 1 ? 'is-done' : '' ?> <?= $stepStatus === 1 ? 'is-current' : '' ?>">
                         <span class="journey-dot"><?= $stepStatus > 1 ? '&#10003;' : '1' ?></span>
                         <div class="journey-info">
                             <strong>Pesanan dibuat</strong>
-                            <small><?= indo_date($order['created_at']) ?>, <?= date('H.i', strtotime($order['created_at'])) ?> WIB</small>
+                            <small><?= indo_date($order['created_at']) ?>,
+                                <?= date('H.i', strtotime($order['created_at'])) ?> WIB</small>
                         </div>
                     </li>
 
-                    <!-- Step 2: DP Diterima & Diverifikasi -->
-                    <li class="journey-step <?= $stepStatus >= 2 ? 'is-done' : '' ?> <?= $stepStatus === 2 ? 'is-current' : '' ?>">
+                    <li
+                        class="journey-step <?= $stepStatus >= 2 ? 'is-done' : '' ?> <?= $stepStatus === 2 ? 'is-current' : '' ?>">
                         <span class="journey-dot"><?= $stepStatus > 2 ? '&#10003;' : '2' ?></span>
                         <div class="journey-info">
                             <strong>DP diterima &amp; diverifikasi</strong>
@@ -118,8 +116,8 @@ require __DIR__ . '/includes/header.php';
                         </div>
                     </li>
 
-                    <!-- Step 3: Menunggu Jadwal Produksi -->
-                    <li class="journey-step <?= $stepStatus >= 3 ? 'is-done' : '' ?> <?= $stepStatus === 3 ? 'is-current' : '' ?>">
+                    <li
+                        class="journey-step <?= $stepStatus >= 3 ? 'is-done' : '' ?> <?= $stepStatus === 3 ? 'is-current' : '' ?>">
                         <span class="journey-dot"><?= $stepStatus > 3 ? '&#10003;' : '3' ?></span>
                         <div class="journey-info">
                             <strong>Menunggu jadwal produksi &amp; memanggang</strong>
@@ -127,8 +125,8 @@ require __DIR__ . '/includes/header.php';
                         </div>
                     </li>
 
-                    <!-- Step 4: Dikirim ke Alamatmu / Siap Diambil -->
-                    <li class="journey-step <?= $stepStatus >= 4 ? 'is-done' : '' ?> <?= $stepStatus === 4 ? 'is-current' : '' ?>">
+                    <li
+                        class="journey-step <?= $stepStatus >= 4 ? 'is-done' : '' ?> <?= $stepStatus === 4 ? 'is-current' : '' ?>">
                         <span class="journey-dot"><?= $stepStatus > 4 ? '&#10003;' : '4' ?></span>
                         <div class="journey-info">
                             <strong>Dikirim ke alamatmu / Siap diambil</strong>
@@ -136,8 +134,8 @@ require __DIR__ . '/includes/header.php';
                         </div>
                     </li>
 
-                    <!-- Step 5: Pesanan Diterima -->
-                    <li class="journey-step <?= $stepStatus >= 5 ? 'is-done' : '' ?> <?= $stepStatus === 5 ? 'is-current' : '' ?>">
+                    <li
+                        class="journey-step <?= $stepStatus >= 5 ? 'is-done' : '' ?> <?= $stepStatus === 5 ? 'is-current' : '' ?>">
                         <span class="journey-dot">5</span>
                         <div class="journey-info">
                             <strong>Pesanan diterima</strong>
@@ -147,19 +145,19 @@ require __DIR__ . '/includes/header.php';
                 </ol>
             </section>
 
-            <!-- Panel Pesanan & Tujuan -->
             <section class="panel order-items-target-panel">
                 <h2 class="panel-inner-title">Pesanan &amp; tujuan</h2>
 
                 <div class="order-items-table-list">
                     <?php foreach ($items as $item): ?>
-                        <div class="order-item-clean-row">
-                            <div class="item-meta-group">
-                                <strong><?= e($item['product_name']) ?></strong>
-                                <small><?= (int) $item['quantity'] ?> toples &times; <?= rupiah($item['price']) ?></small>
-                            </div>
-                            <strong class="item-subtotal-val"><?= rupiah((float) $item['price'] * (int) $item['quantity']) ?></strong>
+                    <div class="order-item-clean-row">
+                        <div class="item-meta-group">
+                            <strong><?= e($item['product_name']) ?></strong>
+                            <small><?= (int) $item['quantity'] ?> toples &times; <?= rupiah($item['price']) ?></small>
                         </div>
+                        <strong
+                            class="item-subtotal-val"><?= rupiah((float) $item['price'] * (int) $item['quantity']) ?></strong>
+                    </div>
                     <?php endforeach; ?>
                 </div>
 
@@ -167,20 +165,19 @@ require __DIR__ . '/includes/header.php';
                     <strong><?= e($order['recipient_name']) ?> &bull; <?= e($order['phone']) ?></strong>
                     <p class="recipient-addr"><?= nl2br(e($order['address'])) ?></p>
                     <?php if ($order['notes']): ?>
-                        <p class="recipient-notes">Catatan: "<?= e($order['notes']) ?>"</p>
+                    <p class="recipient-notes">Catatan: "<?= e($order['notes']) ?>"</p>
                     <?php endif; ?>
                     <div class="ongkir-status-tag">
                         <?php if (!empty($order['shipping_fee'])): ?>
-                            <span class="tag-done">&#10003; Ongkir <?= rupiah($order['shipping_fee']) ?> (Disepakati)</span>
+                        <span class="tag-done">&#10003; Ongkir <?= rupiah($order['shipping_fee']) ?> (Disepakati)</span>
                         <?php else: ?>
-                            <span class="tag-waiting">Ongkir dinegosiasikan via chat</span>
+                        <span class="tag-waiting">Ongkir dinegosiasikan via chat</span>
                         <?php endif; ?>
                     </div>
                 </div>
             </section>
         </div>
 
-        <!-- Kolom Kanan: Rincian Pembayaran, Sisa Tagihan, & Bukti DP -->
         <aside class="order-detail-aside-stack">
             <!-- Rincian Pembayaran -->
             <section class="summary-panel">
@@ -207,32 +204,34 @@ require __DIR__ . '/includes/header.php';
                     <span>Sisa pelunasan</span>
                     <span><?= rupiah($remainingAmount) ?></span>
                 </div>
-                <small class="summary-note">Pelunasan paling lambat <?= e($scheduledDateStr) ?>, 10:00 WIB, sebelum pesanan dikirim.</small>
+                <small class="summary-note">Pelunasan paling lambat <?= e($scheduledDateStr) ?>, 10:00 WIB, sebelum
+                    pesanan dikirim.</small>
             </section>
 
-            <!-- Card Sisa yang Perlu Dilunasi / Tombol Bayar DP -->
             <section class="panel action-card-panel">
                 <span class="card-eyebrow">TAGIHAN SAAT INI</span>
                 <?php if (!$isDpPaid): ?>
-                    <h3 class="action-amount-large"><?= rupiah($order['dp_amount']) ?></h3>
-                    <p class="action-desc">DP 50% wajib dibayar terlebih dahulu untuk mengonfirmasi pesanan ke dapur.</p>
-                    <a class="button button-solid-black button-full" href="<?= e(app_url('payment.php?id=' . (int) $order['id'])) ?>">
-                        Bayar DP 50% Sekarang &rarr;
-                    </a>
+                <h3 class="action-amount-large"><?= rupiah($order['dp_amount']) ?></h3>
+                <p class="action-desc">DP 50% wajib dibayar terlebih dahulu untuk mengonfirmasi pesanan ke dapur.</p>
+                <a class="button button-solid-black button-full"
+                    href="<?= e(app_url('payment.php?id=' . (int) $order['id'])) ?>">
+                    Bayar DP 50% Sekarang &rarr;
+                </a>
                 <?php else: ?>
-                    <h3 class="action-amount-large"><?= rupiah($remainingAmount) ?></h3>
-                    <p class="action-desc">Sisa pelunasan produk dan ongkir sebelum kurir berangkat.</p>
-                    <button type="button" class="button button-solid-black button-full" onclick="alert('Pelunasan dapat ditransfer via QRIS/VA sebelum tanggal pengiriman. Silakan konfirmasi via Chat Admin.')">
-                        Lihat instruksi pelunasan
-                    </button>
+                <h3 class="action-amount-large"><?= rupiah($remainingAmount) ?></h3>
+                <p class="action-desc">Sisa pelunasan produk dan ongkir sebelum kurir berangkat.</p>
+                <button type="button" class="button button-solid-black button-full"
+                    onclick="alert('Pelunasan dapat ditransfer via QRIS/VA sebelum tanggal pengiriman. Silakan konfirmasi via Chat Admin.')">
+                    Lihat instruksi pelunasan
+                </button>
                 <?php endif; ?>
 
-                <button type="button" class="button button-outline-dark button-full button-print" onclick="window.print()">
+                <button type="button" class="button button-outline-dark button-full button-print"
+                    onclick="window.print()">
                     &#128438; Unduh ringkasan pesanan
                 </button>
             </section>
 
-            <!-- Bukti DP Sesuai Gambar 3.26 & 3.36 -->
             <section class="panel proof-dp-panel">
                 <h3>Bukti DP</h3>
                 <div class="proof-row">

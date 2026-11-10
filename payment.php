@@ -76,7 +76,6 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <div class="payment-grid-layout">
-        <!-- Kolom Kiri: QRIS & VA -->
         <div class="payment-main-col">
             <div class="panel payment-status-banner">
                 <div class="pulse-indicator"></div>
@@ -87,7 +86,6 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </div>
 
-            <!-- Box QRIS -->
             <section class="panel qris-box">
                 <div class="qris-header">
                     <div class="qris-logo">
@@ -141,7 +139,6 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </section>
 
-            <!-- Alternatif VA -->
             <section class="panel va-box">
                 <div class="va-header">
                     <div>
@@ -166,7 +163,6 @@ require __DIR__ . '/includes/header.php';
             </section>
         </div>
 
-        <!-- Kolom Kanan: Ringkasan & Jadwal -->
         <aside class="payment-aside-col">
             <section class="summary-panel">
                 <h2>Ringkasan pesanan</h2>

@@ -57,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Filter dan pencarian produk
 $search = trim((string) ($_GET['q'] ?? ''));
 $statusFilter = (string) ($_GET['status'] ?? 'semua');
 
@@ -94,7 +93,6 @@ $adminActive = 'products';
 require dirname(__DIR__) . '/includes/admin_header.php';
 ?>
 <main class="admin-page-wrap">
-    <!-- Header Kelola Produk Sesuai Gambar 3.27 & 3.37 -->
     <div class="panel-header-row kelola-products-header">
         <div>
             <p class="eyebrow">RUANG ADMIN / PRODUK</p>
@@ -107,15 +105,15 @@ require dirname(__DIR__) . '/includes/admin_header.php';
     </div>
 
     <?php if ($error): ?>
-        <div class="notice notice-error"><?= e($error) ?></div>
+    <div class="notice notice-error"><?= e($error) ?></div>
     <?php endif; ?>
 
-    <!-- Filter Bar: Search, Status -->
     <div class="products-filter-bar">
         <form class="products-search-form" method="get">
             <div class="search-input-field">
                 <label for="prod-search">Cari produk</label>
-                <input id="prod-search" type="text" name="q" placeholder="Nama produk atau kategori..." value="<?= e($search) ?>">
+                <input id="prod-search" type="text" name="q" placeholder="Nama produk atau kategori..."
+                    value="<?= e($search) ?>">
             </div>
 
             <div class="search-input-field">
@@ -130,9 +128,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         </form>
     </div>
 
-    <!-- Layout 2 Kolom: Kiri Daftar Produk, Kanan Form Edit/Tambah Produk -->
     <div class="products-management-grid">
-        <!-- Kolom Kiri: Tabel Daftar Produk Sesuai Gambar 3.27 & 3.37 -->
         <div class="products-table-col">
             <section class="panel admin-panel-box">
                 <h2 class="section-clean-title">Daftar produk &bull; <?= count($products) ?></h2>
@@ -150,53 +146,62 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                         </thead>
                         <tbody>
                             <?php if (!$products): ?>
-                                <tr>
-                                    <td colspan="5" class="empty-table-cell">Tidak ada produk ditemukan.</td>
-                                </tr>
+                            <tr>
+                                <td colspan="5" class="empty-table-cell">Tidak ada produk ditemukan.</td>
+                            </tr>
                             <?php endif; ?>
                             <?php foreach ($products as $p): ?>
-                                <tr>
-                                    <td>
-                                        <div class="prod-table-cell-flex">
-                                            <img class="prod-table-thumb" src="<?= e(asset_url($p['image_url'] ?: 'assets/product-nastar.png')) ?>" alt="<?= e($p['name']) ?>">
-                                            <div>
-                                                <strong><?= e($p['name']) ?></strong>
-                                                <small class="cell-sub-item"><?= e($p['category']) ?></small>
-                                            </div>
+                            <tr>
+                                <td>
+                                    <div class="prod-table-cell-flex">
+                                        <img class="prod-table-thumb"
+                                            src="<?= e(asset_url($p['image_url'] ?: 'assets/product-nastar.png')) ?>"
+                                            alt="<?= e($p['name']) ?>">
+                                        <div>
+                                            <strong><?= e($p['name']) ?></strong>
+                                            <small class="cell-sub-item"><?= e($p['category']) ?></small>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <strong><?= rupiah($p['price']) ?></strong>
-                                    </td>
-                                    <td>
-                                        <span><?= (int) $p['stock'] ?> toples</span>
-                                    </td>
-                                    <td>
-                                        <form method="post" style="display:inline;">
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong><?= rupiah($p['price']) ?></strong>
+                                </td>
+                                <td>
+                                    <span><?= (int) $p['stock'] ?> toples</span>
+                                </td>
+                                <td>
+                                    <form method="post" style="display:inline;">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                                        <button type="submit"
+                                            class="status-toggle-btn <?= $p['is_active'] ? 'is-active' : 'is-inactive' ?>"
+                                            title="Klik untuk ubah visibilitas">
+                                            <?= $p['is_active'] ? 'Aktif' : 'Nonaktif' ?>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <div class="table-action-btns">
+                                        <a class="button button-outline-dark button-small"
+                                            href="products.php?edit=<?= (int) $p['id'] ?>#form-produk">
+                                            Edit
+                                        </a>
+                                        <form method="post"
+                                            onsubmit="return confirm('Yakin ingin menghapus produk ini?');"
+                                            style="display:inline;">
                                             <?= csrf_field() ?>
-                                            <input type="hidden" name="action" value="toggle">
+                                            <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
-                                            <button type="submit" class="status-toggle-btn <?= $p['is_active'] ? 'is-active' : 'is-inactive' ?>" title="Klik untuk ubah visibilitas">
-                                                <?= $p['is_active'] ? 'Aktif' : 'Nonaktif' ?>
+                                            <button type="submit"
+                                                class="button button-outline-dark button-small btn-danger"
+                                                title="Hapus">
+                                                Hapus
                                             </button>
                                         </form>
-                                    </td>
-                                    <td>
-                                        <div class="table-action-btns">
-                                            <a class="button button-outline-dark button-small" href="products.php?edit=<?= (int) $p['id'] ?>#form-produk">
-                                                Edit
-                                            </a>
-                                            <form method="post" onsubmit="return confirm('Yakin ingin menghapus produk ini?');" style="display:inline;">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
-                                                <button type="submit" class="button button-outline-dark button-small btn-danger" title="Hapus">
-                                                    Hapus
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -204,50 +209,61 @@ require dirname(__DIR__) . '/includes/admin_header.php';
             </section>
         </div>
 
-        <!-- Kolom Kanan: Form Tambah/Ubah Produk Sesuai Gambar 3.27 & 3.37 -->
         <div class="products-form-col" id="form-produk">
             <section class="panel admin-panel-box">
-                <h2 class="section-clean-title"><?= $editProduct ? 'Edit ' . e($editProduct['name']) : 'Tambah produk baru' ?></h2>
-                <small class="panel-sub"><?= $editProduct ? 'Perbarui data produk atau kuota batch.' : 'Lengkapi informasi menu pre-order baru.' ?></small>
+                <h2 class="section-clean-title">
+                    <?= $editProduct ? 'Edit ' . e($editProduct['name']) : 'Tambah produk baru' ?></h2>
+                <small
+                    class="panel-sub"><?= $editProduct ? 'Perbarui data produk atau kuota batch.' : 'Lengkapi informasi menu pre-order baru.' ?></small>
 
                 <form class="form-stack admin-product-form" method="post" action="products.php">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="save">
                     <input type="hidden" name="id" value="<?= (int) ($editProduct['id'] ?? 0) ?>">
 
-                    <!-- Preview Foto Produk -->
                     <div class="product-form-preview-box">
-                        <img id="formImgPreview" src="<?= e(asset_url($editProduct['image_url'] ?? 'assets/product-nastar.png')) ?>" alt="Preview">
+                        <img id="formImgPreview"
+                            src="<?= e(asset_url($editProduct['image_url'] ?? 'assets/product-nastar.png')) ?>"
+                            alt="Preview">
                     </div>
 
                     <div class="form-group-clean">
                         <label for="image_url">Foto produk (Path aset / URL)</label>
-                        <input id="image_url" type="text" name="image_url" placeholder="assets/product-nastar.png" value="<?= e($editProduct['image_url'] ?? '') ?>" oninput="document.getElementById('formImgPreview').src = this.value || 'assets/product-nastar.png'">
+                        <input id="image_url" type="text" name="image_url" placeholder="assets/product-nastar.png"
+                            value="<?= e($editProduct['image_url'] ?? '') ?>"
+                            oninput="document.getElementById('formImgPreview').src = this.value || 'assets/product-nastar.png'">
                     </div>
 
                     <div class="form-group-clean">
                         <label for="name">Nama produk</label>
-                        <input id="name" type="text" name="name" required maxlength="180" placeholder="Misal: Nastar Nanas Premium" value="<?= e($editProduct['name'] ?? '') ?>">
+                        <input id="name" type="text" name="name" required maxlength="180"
+                            placeholder="Misal: Nastar Nanas Premium" value="<?= e($editProduct['name'] ?? '') ?>">
                     </div>
 
                     <div class="form-group-clean">
                         <label for="category">Kategori</label>
                         <select id="category" name="category" required>
-                            <option value="Kue Kering" <?= ($editProduct['category'] ?? '') === 'Kue Kering' ? 'selected' : '' ?>>Kue Kering</option>
-                            <option value="Makanan" <?= ($editProduct['category'] ?? '') === 'Makanan' ? 'selected' : '' ?>>Makanan</option>
-                            <option value="Minuman" <?= ($editProduct['category'] ?? '') === 'Minuman' ? 'selected' : '' ?>>Minuman</option>
+                            <option value="Kue Kering"
+                                <?= ($editProduct['category'] ?? '') === 'Kue Kering' ? 'selected' : '' ?>>Kue Kering
+                            </option>
+                            <option value="Makanan"
+                                <?= ($editProduct['category'] ?? '') === 'Makanan' ? 'selected' : '' ?>>Makanan</option>
+                            <option value="Minuman"
+                                <?= ($editProduct['category'] ?? '') === 'Minuman' ? 'selected' : '' ?>>Minuman</option>
                         </select>
                     </div>
 
                     <div class="form-group-clean">
                         <label for="price">Harga per toples / porsi (Rp)</label>
-                        <input id="price" type="number" name="price" min="1" step="1000" required placeholder="Misal: 150000" value="<?= e($editProduct['price'] ?? '') ?>">
+                        <input id="price" type="number" name="price" min="1" step="1000" required
+                            placeholder="Misal: 150000" value="<?= e($editProduct['price'] ?? '') ?>">
                     </div>
 
                     <div class="form-grid-2col">
                         <div class="form-group-clean">
                             <label for="stock">Kuota batch / Stok</label>
-                            <input id="stock" type="number" name="stock" min="0" required value="<?= e($editProduct['stock'] ?? '20') ?>">
+                            <input id="stock" type="number" name="stock" min="0" required
+                                value="<?= e($editProduct['stock'] ?? '20') ?>">
                         </div>
                         <div class="form-group-clean">
                             <label for="min-buy">Minimum beli</label>
@@ -257,14 +273,18 @@ require dirname(__DIR__) . '/includes/admin_header.php';
 
                     <div class="form-group-clean">
                         <label for="description">Deskripsi produk</label>
-                        <textarea id="description" name="description" rows="3" placeholder="Jelaskan bahan dan rasa..."><?= e($editProduct['description'] ?? '') ?></textarea>
+                        <textarea id="description" name="description" rows="3"
+                            placeholder="Jelaskan bahan dan rasa..."><?= e($editProduct['description'] ?? '') ?></textarea>
                     </div>
 
                     <div class="form-group-clean">
                         <label for="is_active">Status katalog</label>
                         <select id="is_active" name="is_active">
-                            <option value="1" <?= ($editProduct['is_active'] ?? 1) == 1 ? 'selected' : '' ?>>Aktif (Tampil di katalog)</option>
-                            <option value="0" <?= isset($editProduct['is_active']) && $editProduct['is_active'] == 0 ? 'selected' : '' ?>>Nonaktif (Disembunyikan)</option>
+                            <option value="1" <?= ($editProduct['is_active'] ?? 1) == 1 ? 'selected' : '' ?>>Aktif
+                                (Tampil di katalog)</option>
+                            <option value="0"
+                                <?= isset($editProduct['is_active']) && $editProduct['is_active'] == 0 ? 'selected' : '' ?>>
+                                Nonaktif (Disembunyikan)</option>
                         </select>
                     </div>
 
@@ -273,7 +293,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                             <?= $editProduct ? 'Simpan perubahan' : 'Tambahkan produk' ?>
                         </button>
                         <?php if ($editProduct): ?>
-                            <a class="button button-outline-dark button-full" href="products.php">Batalkan</a>
+                        <a class="button button-outline-dark button-full" href="products.php">Batalkan</a>
                         <?php endif; ?>
                     </div>
                 </form>

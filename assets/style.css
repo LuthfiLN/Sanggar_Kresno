@@ -1,9 +1,3 @@
-/* ==========================================================================
-   SANGGAR TRESNO - DESIGN SYSTEM & STYLESHEET
-   Sesuai Dokumen SRS & Laporan Perangkat Lunak 2026
-   Modern, Clean, Responsive (Desktop & Mobile)
-   ========================================================================== */
-
 :root {
     --bg-canvas: #f8f6f2;
     --card-bg: #ffffff;
@@ -36,9 +30,6 @@
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
-/* ==========================================================================
-   Base & Resets
-   ========================================================================== */
 *, *::before, *::after {
     box-sizing: border-box;
 }
@@ -93,9 +84,6 @@ img {
     display: block;
 }
 
-/* ==========================================================================
-   Typography Helpers
-   ========================================================================== */
 .eyebrow {
     margin: 0 0 6px;
     color: var(--ink-muted);
@@ -105,9 +93,6 @@ img {
     text-transform: uppercase;
 }
 
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
 .button-solid-black {
     background: var(--btn-black);
     color: #ffffff !important;
@@ -181,9 +166,7 @@ img {
     color: var(--ink-primary);
 }
 
-/* ==========================================================================
-   Header & Navbar (Desktop & Mobile Top)
-   ========================================================================== */
+
 .site-header {
     background: rgba(248, 246, 242, 0.95);
     backdrop-filter: blur(10px);
@@ -334,9 +317,6 @@ img {
     background: #fff;
 }
 
-/* ==========================================================================
-   Mobile Bottom Navigation Bar (Gambar 3.33, 3.34, 3.35, 3.36, 3.41)
-   ========================================================================== */
 .mobile-bottom-nav {
     display: none;
     position: fixed;
@@ -397,13 +377,10 @@ img {
         display: flex;
     }
     body {
-        padding-bottom: 74px; /* Supaya konten tidak tertutup bottom bar */
+        padding-bottom: 74px;
     }
 }
 
-/* ==========================================================================
-   Flash Wrap & Notices
-   ========================================================================== */
 .flash-wrap {
     max-width: 1180px;
     margin: 16px auto 0;
@@ -431,9 +408,6 @@ img {
     border-color: #f8b4b4;
 }
 
-/* ==========================================================================
-   Page Shell & Common Layout
-   ========================================================================== */
 .page-shell {
     max-width: 1180px;
     margin: 0 auto;
@@ -465,9 +439,6 @@ img {
     font-size: 13.5px;
 }
 
-/* ==========================================================================
-   Auth Screen (Gambar 3.22 Desktop & Gambar 3.32 Mobile)
-   ========================================================================== */
 .auth-body {
     background: #e7e6e1;
     min-height: 100vh;
@@ -547,9 +518,6 @@ img {
     margin-top: 24px;
 }
 
-/* ==========================================================================
-   Katalog Produk (Gambar 3.23 Desktop & Gambar 3.33 Mobile)
-   ========================================================================== */
 .catalog-header-wrap {
     display: flex;
     align-items: flex-end;
@@ -612,7 +580,6 @@ img {
     margin-left: 8px;
 }
 
-/* Toolbar & Filter Tabs */
 .catalog-toolbar {
     margin-bottom: 24px;
     display: flex;
@@ -682,7 +649,6 @@ img {
     color: var(--ink-muted);
 }
 
-/* Products 4-Grid */
 .products-quad-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -840,7 +806,6 @@ img {
     }
 }
 
-/* 3 Langkah Pemesanan Sesuai Gambar 3.23 */
 .how-to-order-steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -882,9 +847,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Detail Produk (Gambar 3.25 Desktop & Gambar 3.35 Mobile)
-   ========================================================================== */
 .product-breadcrumb-bar {
     margin-bottom: 24px;
     display: flex;
@@ -1115,9 +1077,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Keranjang & Checkout (Gambar 3.24 & Gambar 3.34)
-   ========================================================================== */
 .checkout-steps {
     display: flex;
     align-items: center;
@@ -1290,7 +1249,6 @@ img {
     font-size: 11.5px;
 }
 
-/* Chat Preview inside Cart (Gambar 3.24) */
 .chat-preview-header {
     display: flex;
     justify-content: space-between;
@@ -1356,7 +1314,6 @@ img {
     font-style: italic;
 }
 
-/* Sticky Summary Panel */
 .summary-panel {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
@@ -1448,9 +1405,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Pembayaran DP & QRIS (Gambar 3.31 & Gambar 3.41)
-   ========================================================================== */
 .payment-grid-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
@@ -1594,7 +1548,6 @@ img {
     font-size: 11.5px;
 }
 
-/* Virtual Account Box */
 .va-box {
     padding: 22px;
 }
@@ -1688,9 +1641,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Order Detail & Tracking (Gambar 3.26 Desktop & Gambar 3.36 Mobile)
-   ========================================================================== */
 .order-confirmed-banner {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
@@ -1809,7 +1759,6 @@ img {
     font-size: 11.5px;
 }
 
-/* Stepper 5 Tahap (Gambar 3.26) */
 .journey-stepper-list {
     margin: 0;
     padding: 0;
@@ -1929,7 +1878,6 @@ img {
     font-weight: 600;
 }
 
-/* Aside Cards */
 .order-detail-aside-stack {
     display: flex;
     flex-direction: column;
@@ -1986,9 +1934,7 @@ img {
     }
 }
 
-/* ==========================================================================
-   Order List (orders.php)
-   ========================================================================== */
+
 .orders-list-stack {
     display: flex;
     flex-direction: column;
@@ -2080,9 +2026,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Chat & Negosiasi (Gambar 3.30 & Gambar 3.40)
-   ========================================================================== */
 .chat-shell {
     max-width: 1240px;
 }
@@ -2216,7 +2159,6 @@ img {
     border-radius: var(--radius-pill);
 }
 
-/* Negotiation Action Bar in Admin Chat */
 .negotiation-action-bar {
     background: #fdfaf2;
     border-bottom: 1px solid #ebdfc5;
@@ -2392,9 +2334,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Admin Workspace Layout (Gambar 3.27, 3.28, 3.29)
-   ========================================================================== */
 .admin-body {
     background: #f4f3ed;
 }
@@ -2551,7 +2490,6 @@ img {
     color: var(--ink-secondary);
 }
 
-/* 4 Stat Cards in Admin Dashboard (Gambar 3.29) */
 .admin-stat-quad-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2602,7 +2540,6 @@ img {
     gap: 20px;
 }
 
-/* Dashboard Hero */
 .admin-dashboard-hero {
     display: flex;
     justify-content: space-between;
@@ -2654,7 +2591,6 @@ img {
     background: #ffffff;
 }
 
-/* Table Style */
 .table-wrap-clean {
     overflow-x: auto;
 }
@@ -2753,7 +2689,6 @@ img {
     margin: 0 0 16px;
 }
 
-/* Kelola Pesanan Master Detail (Gambar 3.28) */
 .orders-filter-container {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
@@ -2885,7 +2820,6 @@ img {
     gap: 12px;
 }
 
-/* Kelola Produk Grid (Gambar 3.27) */
 .products-management-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(340px, 1fr);
@@ -2980,7 +2914,6 @@ img {
     margin-top: 8px;
 }
 
-/* Report Panel */
 .report-filter-panel {
     margin-bottom: 22px;
 }
@@ -3011,7 +2944,6 @@ img {
     display: none;
 }
 
-/* Admin Mobile Nav */
 .admin-mobile-nav {
     display: none;
     position: fixed;
@@ -3066,9 +2998,6 @@ img {
     }
 }
 
-/* ==========================================================================
-   Footer
-   ========================================================================== */
 .site-footer {
     background: #f1ede3;
     border-top: 1px solid var(--border-subtle);
@@ -3104,9 +3033,6 @@ img {
     text-decoration: underline;
 }
 
-/* ==========================================================================
-   Print Stylesheet (@media print)
-   ========================================================================== */
 @media print {
     body {
         background: #ffffff !important;

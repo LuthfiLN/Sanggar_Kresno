@@ -49,7 +49,9 @@ $pageTitle = 'Daftar Akun';
     <title>Daftar Akun | Sanggar Tresno</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="<?= e(asset_url('assets/style.css')) ?>">
 </head>
 
@@ -69,29 +71,33 @@ $pageTitle = 'Daftar Akun';
             <h1 class="auth-card-title">Daftar Akun Baru</h1>
 
             <?php if ($error): ?>
-                <div class="notice notice-error"><?= e($error) ?></div>
+            <div class="notice notice-error"><?= e($error) ?></div>
             <?php endif; ?>
 
             <form class="auth-clean-form" method="post" action="<?= e(app_url('register.php')) ?>">
                 <?= csrf_field() ?>
-                
+
                 <div class="form-group-clean">
                     <label for="reg-name">Nama lengkap / Username</label>
-                    <input id="reg-name" type="text" name="name" placeholder="Masukkan nama lengkap" required autocomplete="name" value="<?= e($_POST['name'] ?? '') ?>">
+                    <input id="reg-name" type="text" name="name" placeholder="Masukkan nama lengkap" required
+                        autocomplete="name" value="<?= e($_POST['name'] ?? '') ?>">
                 </div>
 
                 <div class="form-group-clean">
                     <label for="reg-email">Email</label>
-                    <input id="reg-email" type="email" name="email" placeholder="nama@email.com" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
+                    <input id="reg-email" type="email" name="email" placeholder="nama@email.com" required
+                        autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
                 </div>
 
                 <div class="form-group-clean">
                     <label for="reg-password">Password</label>
-                    <input id="reg-password" type="password" name="password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+                    <input id="reg-password" type="password" name="password" placeholder="Minimal 6 karakter" required
+                        minlength="6" autocomplete="new-password">
                 </div>
 
                 <button class="button button-solid-black button-full" type="submit">Daftar Sekarang</button>
-                <a class="button button-outline-dark button-full" href="<?= e(app_url('login.php')) ?>">Sudah punya akun? Masuk</a>
+                <a class="button button-outline-dark button-full" href="<?= e(app_url('login.php')) ?>">Sudah punya
+                    akun? Masuk</a>
             </form>
 
             <div class="auth-card-footer">
@@ -100,4 +106,5 @@ $pageTitle = 'Daftar Akun';
         </div>
     </div>
 </body>
+
 </html>
