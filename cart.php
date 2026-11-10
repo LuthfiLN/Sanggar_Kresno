@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/config.php';
 
+$viewer = current_user();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
@@ -11,14 +13,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'remove' && $productId) {
         unset($_SESSION['cart'][$productId]);
-        set_flash('success', 'Produk dihapus dari tas belanja.');
+        set_flash('success', 'Produk dihapus dari keranjang belanja.');
     } elseif ($action === 'update' && $productId) {
         $quantity = filter_var($_POST['quantity'] ?? 0, FILTER_VALIDATE_INT);
-
-        // Jika kuantitas dikurangi hingga 0 atau kurang, hapus produk dari keranjang
         if ($quantity <= 0) {
             unset($_SESSION['cart'][$productId]);
-            set_flash('success', 'Produk dihapus dari tas belanja.');
+            set_flash('success', 'Produk dihapus dari keranjang.');
         } else {
             $stockQuery = db()->prepare('SELECT stock FROM products WHERE id = ? AND is_active = 1');
             $stockQuery->execute([$productId]);
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    header('Location: cart.php');
+    header('Location: ' . app_url('cart.php'));
     exit;
 }
 
@@ -41,7 +41,7 @@ if ($cart) {
     $ids = array_values(array_filter(array_map('intval', array_keys($cart))));
     if ($ids) {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $query = db()->prepare("SELECT id, name, price, stock, image_url FROM products WHERE is_active = 1 AND id IN ($placeholders)");
+        $query = db()->prepare("SELECT id, name, price, stock, image_url, category FROM products WHERE is_active = 1 AND id IN ($placeholders)");
         $query->execute($ids);
         $items = $query->fetchAll();
         foreach ($items as &$item) {
@@ -52,103 +52,177 @@ if ($cart) {
         unset($item);
     }
 }
-$pageTitle = 'Tas belanja';
+
+$dpAmount = round($total * 0.5, 2);
+$scheduledDate = !empty($_SESSION['preorder_delivery_date']) ? indo_date($_SESSION['preorder_delivery_date']) : indo_date(min_preorder_date());
+$fulfillment = $_SESSION['preorder_fulfillment'] ?? 'delivery';
+
+// Ambil pesan chat terakhir pengguna jika sudah login
+$recentMessages = [];
+if ($viewer) {
+    $chatQuery = db()->prepare('SELECT * FROM messages WHERE customer_id = ? ORDER BY id DESC LIMIT 3');
+    $chatQuery->execute([$viewer['id']]);
+    $recentMessages = array_reverse($chatQuery->fetchAll());
+}
+
+$pageTitle = 'Keranjang Checkout';
+$currentNav = 'cart';
 require __DIR__ . '/includes/header.php';
 ?>
-<main class="page-shell">
+<main class="page-shell cart-page">
+    <!-- Stepper Sesuai Gambar 3.24 & 3.34 -->
     <nav class="checkout-steps" aria-label="Tahap pemesanan">
         <span class="is-current"><b>1</b> Keranjang</span>
-        <span><b>2</b> Checkout</span>
-        <span><b>3</b> Konfirmasi DP</span>
+        <span><b>2</b> Data penerima</span>
+        <span><b>3</b> Pembayaran DP</span>
     </nav>
 
     <div class="page-heading">
-        <p class="eyebrow">PILIHANMU</p>
+        <p class="eyebrow">PESANAN PRE-ORDER / MEDAN</p>
         <h1>Keranjang kamu</h1>
-        <p><?= array_sum(array_map('intval', $cart)) ?> item. Periksa kue dan jadwal sebelum lanjut checkout.</p>
+        <p><?= array_sum(array_map('intval', $cart)) ?> item untuk <?= e($scheduledDate) ?>. Periksa pesanan dan ongkir sebelum lanjut checkout.</p>
     </div>
 
     <?php if (!$items): ?>
-    <div class="panel">
-        <p>Tasmu masih kosong.</p>
-        <a class="button button-dark" href="index.php#koleksi">Lihat koleksi</a>
-    </div>
+        <div class="panel empty-cart-box">
+            <div class="empty-icon">&#128722;</div>
+            <h2>Keranjang belanjamu masih kosong</h2>
+            <p>Pilih aneka kue kering rumahan buatan Sanggar Tresno yang dibuat segar sesuai batch.</p>
+            <a class="button button-solid-black" href="<?= e(app_url('index.php#koleksi')) ?>">Pilih menu kue &rarr;</a>
+        </div>
     <?php else: ?>
-    <div class="cart-layout">
-        <section class="cart-main-column">
-            <div class="panel cart-products-panel">
-                <h2 class="checkout-section-title">Produk pesanan</h2>
+        <div class="cart-layout-grid">
+            <!-- Kolom Kiri: Produk, Tujuan, & Box Negosiasi Ongkir -->
+            <div class="cart-main-stack">
+                <!-- Panel 1: Produk Pesanan -->
+                <section class="panel cart-card-section">
+                    <h2 class="cart-section-title">Produk pesanan</h2>
+                    
+                    <div class="cart-items-list">
+                        <?php foreach ($items as $item): ?>
+                            <article class="cart-row-item">
+                                <div class="cart-row-thumb">
+                                    <img src="<?= e(asset_url($item['image_url'] ?: 'assets/product-nastar.png')) ?>" alt="<?= e($item['name']) ?>">
+                                </div>
+                                <div class="cart-row-details">
+                                    <h3><?= e($item['name']) ?></h3>
+                                    <span class="cart-row-meta"><?= (int) $item['quantity'] ?> &times; <?= rupiah($item['price']) ?></span>
+                                    
+                                    <!-- Stepper & Hapus -->
+                                    <form method="post" class="cart-item-stepper-form">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="update">
+                                        <input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
 
-                <?php foreach ($items as $item): ?>
-                <article class="cart-item">
-                    <img src="<?= e(asset_url($item['image_url'])) ?>" alt="<?= e($item['name']) ?>">
-
-                    <div class="cart-item-details">
-                        <h3><?= e($item['name']) ?></h3>
-                        <p class="cart-item-meta"><?= (int) $item['quantity'] ?> &times; <?= rupiah($item['price']) ?>
-                        </p>
-
-                        <!-- Stepper Tombol - dan + yang langsung kirim update -->
-                        <form method="post" class="cart-stepper">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="update">
-                            <input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
-
-                            <button type="submit" name="quantity" value="<?= (int)$item['quantity'] - 1 ?>"
-                                class="stepper-btn" aria-label="Kurangi kuantitas">&minus;</button>
-                            <span class="stepper-count"><?= (int) $item['quantity'] ?></span>
-                            <button type="submit" name="quantity" value="<?= (int)$item['quantity'] + 1 ?>"
-                                class="stepper-btn" aria-label="Tambah kuantitas"
-                                <?= (int)$item['quantity'] >= (int)$item['stock'] ? 'disabled' : '' ?>>&plus;</button>
-                        </form>
+                                        <div class="mini-stepper">
+                                            <button type="submit" name="quantity" value="<?= (int) $item['quantity'] - 1 ?>" class="mini-step-btn" title="Kurangi">&minus;</button>
+                                            <span class="mini-step-val"><?= (int) $item['quantity'] ?></span>
+                                            <button type="submit" name="quantity" value="<?= (int) $item['quantity'] + 1 ?>" class="mini-step-btn" title="Tambah" <?= (int) $item['quantity'] >= (int) $item['stock'] ? 'disabled' : '' ?>>&plus;</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="cart-row-price">
+                                    <strong><?= rupiah($item['subtotal']) ?></strong>
+                                    <form method="post" class="cart-remove-form">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="remove">
+                                        <input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
+                                        <button type="submit" class="cart-del-btn" title="Hapus dari keranjang">&times; Hapus</button>
+                                    </form>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
                     </div>
 
-                    <div class="cart-item-price-right">
-                        <strong><?= rupiah($item['subtotal']) ?></strong>
+                    <div class="cart-add-more-row">
+                        <a class="button button-outline-dark button-small" href="<?= e(app_url('index.php#koleksi')) ?>">+ Tambah produk lain</a>
                     </div>
-                </article>
-                <?php endforeach; ?>
+                </section>
 
-                <a class="text-link cart-add-more" href="index.php#koleksi">+ Tambah produk</a>
+                <!-- Panel 2: Antar ke Alamat / Pengiriman Sesuai Mockup Gambar 3.24 -->
+                <section class="panel cart-card-section">
+                    <h2 class="cart-section-title">Penerimaan &amp; jadwal</h2>
+                    <div class="delivery-preview-box">
+                        <div class="delivery-details-text">
+                            <strong><?= $viewer ? e($viewer['name']) : 'Pelanggan' ?></strong>
+                            <p>Metode: <strong><?= $fulfillment === 'pickup' ? 'Ambil sendiri di Toko (Medan)' : 'Antar ke alamat (Kota Medan)' ?></strong></p>
+                            <small class="delivery-schedule-tag">&#128197; Jadwal pre-order: <?= e($scheduledDate) ?> &bull; 13.00&ndash;16.00 WIB</small>
+                        </div>
+                        <a class="text-link-primary" href="<?= e(app_url('checkout.php')) ?>">Ubah data penerima &rarr;</a>
+                    </div>
+                </section>
+
+                <!-- Panel 3: Negosiasi Ongkir Medan Sesuai Mockup Gambar 3.24 -->
+                <section class="panel cart-card-section chat-preview-card">
+                    <div class="chat-preview-header">
+                        <div>
+                            <h2 class="cart-section-title">Negosiasi ongkir &bull; Medan</h2>
+                            <small class="chat-sub">Diskusikan ongkos kirim dan waktu kirim terbaik dengan admin kami.</small>
+                        </div>
+                        <span class="badge-negotiation">Tawar-menawar langsung</span>
+                    </div>
+
+                    <div class="chat-mini-history">
+                        <?php if ($recentMessages): ?>
+                            <?php foreach ($recentMessages as $msg): ?>
+                                <div class="mini-chat-bubble <?= $msg['sender_role'] === 'customer' ? 'from-me' : 'from-admin' ?>">
+                                    <small><?= $msg['sender_role'] === 'customer' ? 'Anda' : 'Admin' ?>:</small>
+                                    <p><?= e($msg['body']) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="chat-empty-hint">Belum ada obrolan ongkir. Klik tombol di bawah untuk menyepakati ongkos kirim area Medan dengan admin.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="chat-preview-actions">
+                        <a class="button button-outline-dark button-full" href="<?= e(app_url('chat.php')) ?>">
+                            Buka ruang obrolan / Chat admin &rarr;
+                        </a>
+                    </div>
+                </section>
             </div>
 
-            <section class="cart-negotiation">
-                <div>
-                    <p class="eyebrow">PENGIRIMAN MEDAN</p>
-                    <h2>Sepakati ongkir</h2>
-                    <p><?= ($_SESSION['preorder_fulfillment'] ?? 'delivery') === 'pickup' ? 'Pilihan saat ini: ambil sendiri.' : 'Ongkir belum ditambahkan ke total. Diskusikan dengan admin sebelum checkout.' ?>
-                    </p>
-                </div>
-                <a class="button button-outline" href="chat.php">Chat admin</a>
-            </section>
-        </section>
+            <!-- Kolom Kanan: Ringkasan Pesanan & Tombol Checkout -->
+            <aside class="cart-aside-stack">
+                <section class="summary-panel cart-sticky-summary">
+                    <h2>Ringkasan pesanan</h2>
+                    <p class="order-reference">Pre-order &bull; <?= array_sum(array_map('intval', $cart)) ?> item</p>
 
-        <aside class="cart-summary-column">
-            <section class="summary-panel">
-                <h2>Ringkasan pesanan</h2>
-                <p class="order-reference">Keranjang &middot; <?= array_sum(array_map('intval', $cart)) ?> item</p>
-                <div class="summary-row"><span>Subtotal produk</span><span><?= rupiah($total) ?></span></div>
-                <div class="summary-row"><span>Ongkir</span><span>Belum disepakati</span></div>
-                <div class="summary-row summary-total"><span>Total sementara</span><span><?= rupiah($total) ?></span>
-                </div>
-                <div class="dp-summary">
-                    <strong>DP 50% sebelum dibuat</strong>
-                    <b><?= rupiah(round($total * 0.5, 2)) ?></b>
-                    <small>Sisa pelunasan <?= rupiah(round($total * 0.5, 2)) ?></small>
-                </div>
-                <a class="button button-dark" href="checkout.php">Lanjut checkout <span
-                        aria-hidden="true">&#8594;</span></a>
-                <p class="payment-note">Jumlah akhir menunggu kesepakatan ongkir. Pesanan diproses setelah DP
-                    dikonfirmasi.</p>
-            </section>
-            <p class="cart-delivery-note">
-                Jadwal:
-                <?= !empty($_SESSION['preorder_delivery_date']) ? e(date('D, d M Y', strtotime($_SESSION['preorder_delivery_date']))) : 'Pilih saat checkout' ?><br>
-                Metode:
-                <?= ($_SESSION['preorder_fulfillment'] ?? 'delivery') === 'pickup' ? 'Ambil sendiri' : 'Antar ke alamat' ?>
-            </p>
-        </aside>
-    </div>
+                    <div class="summary-row">
+                        <span>Subtotal produk</span>
+                        <span><?= rupiah($total) ?></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Ongkir</span>
+                        <span class="ongkir-highlight">Dinegosiasikan via chat</span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>Total pesanan</span>
+                        <span><?= rupiah($total) ?></span>
+                    </div>
+
+                    <!-- Highlight DP 50% -->
+                    <div class="dp-highlight-card">
+                        <div class="dp-badge">Wajib di Awal</div>
+                        <div class="dp-row">
+                            <strong>DP 50% - Bayar sekarang</strong>
+                            <b class="dp-val"><?= rupiah($dpAmount) ?></b>
+                        </div>
+                        <small>Sisa pelunasan <?= rupiah($dpAmount) ?> dibayar sebelum pesanan dikirim.</small>
+                    </div>
+
+                    <a class="button button-solid-black button-full button-large" href="<?= e(app_url('checkout.php')) ?>">
+                        Lanjut checkout &rarr;
+                    </a>
+
+                    <div class="cart-guarantee-note">
+                        <span class="shield-icon">&#128737;</span>
+                        <p>Kue dibuat higienis setelah pembayaran DP 50% terverifikasi. Tidak ada perubahan pesanan tanpa konfirmasi pelanggan.</p>
+                    </div>
+                </section>
+            </aside>
+        </div>
     <?php endif; ?>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

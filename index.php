@@ -3,19 +3,23 @@
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
+
+// Menangani penambahan ke keranjang langsung jika ada
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'add') {
     verify_csrf();
     $productId = filter_var($_POST['product_id'] ?? null, FILTER_VALIDATE_INT);
     $quantity = filter_var($_POST['quantity'] ?? 1, FILTER_VALIDATE_INT);
     $deliveryDate = trim((string) ($_POST['delivery_date'] ?? ''));
     $parsedDeliveryDate = DateTimeImmutable::createFromFormat('!Y-m-d', $deliveryDate);
-    $minimumDeliveryDate = new DateTimeImmutable('today +3 days');
+    $minimumDeliveryDate = min_preorder_datetime();
+
     if (!$parsedDeliveryDate || $parsedDeliveryDate->format('Y-m-d') !== $deliveryDate || $parsedDeliveryDate < $minimumDeliveryDate) {
-        set_flash('error', 'Tanggal pre-order paling cepat 3 hari setelah pemesanan.');
+        set_flash('error', 'Tanggal pre-order tidak bisa dipilih untuk besok atau lusa. Pemesanan minimal 3 hari setelah dipesan agar kue dapat dibuat segar.');
     } else {
         $query = db()->prepare('SELECT id, stock FROM products WHERE id = ? AND is_active = 1');
         $query->execute([$productId]);
         $product = $query->fetch();
+
         if (!$product || (int) $product['stock'] < 1 || !$quantity || $quantity < 1) {
             set_flash('error', 'Produk sedang tidak tersedia.');
         } else {
@@ -25,10 +29,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
             $_SESSION['preorder_delivery_date'] = $deliveryDate;
             $fulfillment = (string) ($_POST['fulfillment'] ?? 'delivery');
             $_SESSION['preorder_fulfillment'] = in_array($fulfillment, ['delivery', 'pickup'], true) ? $fulfillment : 'delivery';
-            set_flash('success', 'Produk ditambahkan ke tas belanja.');
+            set_flash('success', 'Produk ditambahkan ke keranjang.');
         }
     }
-    header('Location: ' . app_url('index.php#koleksi'));
+    header('Location: ' . app_url('cart.php'));
     exit;
 }
 
@@ -36,11 +40,13 @@ $search = trim((string) ($_GET['q'] ?? ''));
 $category = (string) ($_GET['category'] ?? 'semua');
 $conditions = ['is_active = 1'];
 $parameters = [];
+
 if ($search !== '') {
     $conditions[] = '(name LIKE ? OR description LIKE ? OR category LIKE ?)';
     $term = '%' . $search . '%';
     array_push($parameters, $term, $term, $term);
 }
+
 if ($category === 'makanan') {
     $conditions[] = "(category LIKE '%kue%' OR category LIKE '%makanan%')";
 } elseif ($category === 'minuman') {
@@ -48,91 +54,123 @@ if ($category === 'makanan') {
 } else {
     $category = 'semua';
 }
+
 $productsQuery = db()->prepare('SELECT * FROM products WHERE ' . implode(' AND ', $conditions) . ' ORDER BY created_at DESC');
 $productsQuery->execute($parameters);
 $products = $productsQuery->fetchAll();
-$pageTitle = 'Preorder kue Lebaran di Medan';
+
+$nextBatchDate = indo_date(date('Y-m-d', strtotime('+3 days')));
+$pageTitle = 'Katalog Pre-Order';
+$currentNav = 'menu';
 require __DIR__ . '/includes/header.php';
 ?>
-<main>
-    <section class="hero">
-        <div class="hero-copy">
-            <p class="eyebrow">Sanggar Tresno</p>
-            <h1>Lebih nikmat,<br><span>lebih hangat</span><br>dengan kue rumah.</h1>
-            <p>Nastar, kastengel, dan kue favorit lainnya dibuat segar sesuai preorder. Pembayaran DP 50% sebelum mulai
-                dipanggang.</p>
-            <div class="hero-actions"><a class="button button-dark" href="#koleksi">Pilih Kue <span
-                        aria-hidden="true">&#8594;</span></a><a class="text-link" href="chat.php">Tanya jadwal</a></div>
-        </div>
-        <div class="hero-image" role="img" aria-label="Aneka kue Lebaran rumahan"><span class="hero-stamp">Fresh from
-                our oven</span></div>
-    </section>
-
-    <div class="ticker"><span>&bull; PREORDER</span> &bull; DIBUAT SETELAH DP 50%<span>&bull; HOMEMADE</span></div>
-
-    <section class="catalog" id="koleksi">
-        <div class="section-top">
-            <div>
-                <p class="eyebrow">DIBUAT BERDASARKAN PESANAN</p>
-                <h2>Daftar produk</h2>
-                <p>Pilih produk dari jadwal pre-order.</p>
-            </div>
-            <div class="schedule-info">
-                <div>
-                    <small>Tutup pre-order, 18:00 WIB • Antar & ambil sendiri</small>
-                </div>
-            </div>
+<main class="page-shell">
+    <!-- Header Bagian Katalog Sesuai Gambar 3.23 & 3.33 -->
+    <div class="catalog-header-wrap">
+        <div class="catalog-header-left">
+            <p class="eyebrow">DAPUR SELA RASA / MEDAN</p>
+            <h1 class="catalog-main-title">Daftar produk</h1>
+            <p class="catalog-subtitle">Pilih produk dan jadwal pre-order.</p>
         </div>
 
-        <div class="catalog-filters">
-            <form class="search-form" method="get" action="<?= e(app_url('index.php')) ?>">
-                <input type="search" name="q" placeholder="Cari produk..." value="<?= e($search) ?>"
-                    aria-label="Cari produk">
-                <button type="submit">Cari</button>
-            </form>
-            <div class="category-tabs">
-                <a href="?category=semua" class="tab-btn <?= $category === 'semua' ? 'active' : '' ?>">Semua</a>
-                <a href="?category=minuman" class="tab-btn <?= $category === 'minuman' ? 'active' : '' ?>">Minuman</a>
-                <a href="?category=makanan" class="tab-btn <?= $category === 'makanan' ? 'active' : '' ?>">Makanan</a>
-                <span class="item-count"><?= count($products) ?> produk • Harga per toples/kemasan</span>
+        <div class="catalog-schedule-card">
+            <div class="schedule-calendar-icon">&#128197;</div>
+            <div class="schedule-text">
+                <strong>Pre-order &bull; <?= e($nextBatchDate) ?></strong>
+                <small>Tutup pre-order 18:00 WIB &bull; Antar &amp; ambil sendiri</small>
             </div>
+            <span class="schedule-badge">Produk <?= count($products) ?> &bull; Pre-order</span>
         </div>
+    </div>
 
-        <div class="product-grid">
-            <?php if (!$products): ?>
-            <div class="empty-state">Belum ada produk yang cocok. Coba kata pencarian lain.</div>
+    <!-- Filter & Pencarian Sesuai Gambar 3.23 & 3.33 -->
+    <div class="catalog-toolbar">
+        <form class="search-form-clean" method="get" action="<?= e(app_url('index.php')) ?>">
+            <div class="search-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="search" name="q" placeholder="Cari produk..." value="<?= e($search) ?>" aria-label="Cari produk">
+            </div>
+            <?php if ($category !== 'semua'): ?>
+                <input type="hidden" name="category" value="<?= e($category) ?>">
             <?php endif; ?>
+        </form>
+
+        <div class="catalog-category-filter">
+            <div class="category-tabs-clean">
+                <a href="?category=semua<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'semua' ? 'is-active' : '' ?>">Semua</a>
+                <a href="?category=minuman<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'minuman' ? 'is-active' : '' ?>">Minuman</a>
+                <a href="?category=makanan<?= $search !== '' ? '&q=' . urlencode($search) : '' ?>" class="tab-clean <?= $category === 'makanan' ? 'is-active' : '' ?>">Makanan</a>
+            </div>
+            <span class="category-count-label"><?= count($products) ?> produk &bull; Harga per porsi / kemasan</span>
+        </div>
+    </div>
+
+    <!-- Product Grid 4 Kolom di Desktop, 1 Kolom di Mobile -->
+    <section class="products-grid-container" id="koleksi">
+        <?php if (!$products): ?>
+            <div class="panel empty-catalog-state">
+                <p>Belum ada produk yang cocok dengan pencarian "<strong><?= e($search) ?></strong>".</p>
+                <a class="button button-outline-dark" href="<?= e(app_url('index.php')) ?>">Tampilkan semua produk</a>
+            </div>
+        <?php endif; ?>
+
+        <div class="products-quad-grid">
             <?php foreach ($products as $index => $product): ?>
-            <article class="product-card" style="animation-delay: <?= (int) $index * 70 ?>ms">
-                <a class="product-image" href="product.php?id=<?= (int) $product['id'] ?>"
-                    aria-label="Lihat detail <?= e($product['name']) ?>">
-                    <img src="<?= e(asset_url($product['image_url'] ?: 'assets/product-nastar.png')) ?>"
-                        alt="<?= e($product['name']) ?>" loading="lazy">
-                    <span class="product-category">Pre-order</span>
-                </a>
-                <div class="product-info">
-                    <h3><?= e($product['name']) ?></h3>
-                    <p><?= e($product['description']) ?></p>
-                    <div class="product-bottom">
-                        <span class="product-price"><?= rupiah($product['price']) ?></span>
-                        <a class="button button-outline button-small"
-                            href="product.php?id=<?= (int) $product['id'] ?>">Lihat produk</a>
+                <?php
+                $isFav = ($index === 0);
+                $tagLabel = $isFav ? 'Favorit' : 'Pre-order';
+                $tagClass = $isFav ? 'tag-favorite' : 'tag-preorder';
+                ?>
+                <article class="product-card-clean">
+                    <div class="product-card-thumb">
+                        <span class="product-tag-pill <?= $tagClass ?>"><?= e($tagLabel) ?></span>
+                        <a href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
+                            <img src="<?= e(asset_url($product['image_url'] ?: 'assets/product-nastar.png')) ?>" alt="<?= e($product['name']) ?>" loading="lazy">
+                        </a>
                     </div>
-                </div>
-            </article>
+                    <div class="product-card-content">
+                        <h2 class="product-card-name">
+                            <a href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>"><?= e($product['name']) ?></a>
+                        </h2>
+                        <p class="product-card-desc"><?= e($product['description'] ?: 'Dibuat segar sesuai pesanan dengan resep rumahan khas Medan.') ?></p>
+                        <p class="product-card-unit"><?= e($product['category'] ?? 'toples') ?></p>
+                        <div class="product-card-foot">
+                            <strong class="product-card-price"><?= rupiah($product['price']) ?></strong>
+                            <a class="product-card-link-btn" href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>">
+                                Lihat produk <span class="arrow-icon">&#8599;</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
             <?php endforeach; ?>
         </div>
     </section>
 
-    <section class="story-band">
-        <!-- Bagian story band tetap sama -->
-        <div class="story-image" role="img" aria-label="Kue kering buatan rumah"></div>
-        <div class="story-copy">
-            <p class="eyebrow">PREORDER YANG LEBIH SEGAR</p>
-            <h2>Adonan disiapkan setelah DP masuk, bukan disimpan lama di rak.</h2>
-            <p>Bayar DP 50% untuk mengunci pesanan. Kami mulai memanggang setelah pembayaran diverifikasi, kemudian
-                kirim setelah pelunasan dan ongkir dikonfirmasi.</p>
-            <a class="text-link" href="chat.php">Tanya admin Sanggar Tresno &#8594;</a>
+    <!-- 3 Langkah Pemesanan Sesuai Bagian Bawah Gambar 3.23 & 3.33 -->
+    <section class="how-to-order-steps" id="cara-pesan">
+        <div class="step-card-clean">
+            <span class="step-card-num">01</span>
+            <div class="step-card-body">
+                <h3>Pilih jadwal</h3>
+                <p>Semua dibuat sesuai batch pre-order minimal 3 hari sebelum pengiriman.</p>
+            </div>
+        </div>
+        <div class="step-card-clean">
+            <span class="step-card-num">02</span>
+            <div class="step-card-body">
+                <h3>Sepakati ongkir</h3>
+                <p>Khusus Medan, ngobrol dulu dengan admin melalui fitur chat internal.</p>
+            </div>
+        </div>
+        <div class="step-card-clean">
+            <span class="step-card-num">03</span>
+            <div class="step-card-body">
+                <h3>Bayar DP 50%</h3>
+                <p>QRIS atau Virtual Account otomatis, sisanya dilunasi sebelum pesanan dikirim.</p>
+            </div>
         </div>
     </section>
 </main>

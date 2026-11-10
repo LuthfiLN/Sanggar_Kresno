@@ -20,12 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $deliveryDateInput = trim((string) ($_POST['delivery_date'] ?? ''));
     $fulfillment = (string) ($_POST['fulfillment'] ?? ($_SESSION['preorder_fulfillment'] ?? 'delivery'));
     $deliveryDate = DateTimeImmutable::createFromFormat('!Y-m-d', $deliveryDateInput);
-    $minimumDeliveryDate = new DateTimeImmutable('today +3 days');
+    $minimumDeliveryDate = min_preorder_datetime();
     $notes = trim((string) ($_POST['notes'] ?? ''));
     if ($recipient === '' || $phone === '' || !in_array($fulfillment, ['delivery', 'pickup'], true) || ($fulfillment === 'delivery' && $address === '') || !$deliveryDate || $deliveryDate->format('Y-m-d') !== $deliveryDateInput) {
         $error = 'Lengkapi nama, nomor WhatsApp, metode penerimaan, alamat antar, dan tanggal kirim.';
     } elseif ($deliveryDate < $minimumDeliveryDate) {
-        $error = 'Tanggal preorder paling cepat 3 hari setelah pemesanan.';
+        $error = 'Tanggal pre-order tidak bisa dipilih untuk besok atau lusa. Pemesanan minimal 3 hari setelah dipesan agar kue dapat dibuat segar. Tanggal pengiriman dapat disesuaikan kembali oleh admin melalui chat bila pesanan sedang banyak.';
     } elseif (strlen($recipient) > 120 || strlen($phone) > 40 || strlen($notes) > 500) {
         $error = 'Ada isian yang melebihi batas karakter.';
     } else {
@@ -49,8 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $total += (float) $product['price'] * $quantity;
             }
             $dpAmount = round($total * 0.5, 2);
-            $order = $pdo->prepare('INSERT INTO orders (user_id, recipient_name, phone, address, delivery_date, notes, total, dp_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            $savedAddress = $fulfillment === 'pickup' ? 'Ambil sendiri' : $address;
+            $order = $pdo->prepare('INSERT INTO orders (user_id, recipient_name, phone, address, delivery_date, notes, total, dp_amount, shipping_fee, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, "pending", "unpaid")');
+            $savedAddress = $fulfillment === 'pickup' ? 'Ambil sendiri di Toko (Medan)' : $address;
             $order->execute([$user['id'], $recipient, $phone, $savedAddress, $deliveryDateInput, $notes, $total, $dpAmount]);
             $orderId = (int) $pdo->lastInsertId();
             $insertItem = $pdo->prepare('INSERT INTO order_items (order_id, product_id, product_name, price, quantity) VALUES (?, ?, ?, ?, ?)');
@@ -63,8 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             unset($_SESSION['cart']);
             unset($_SESSION['preorder_delivery_date'], $_SESSION['preorder_fulfillment']);
-            set_flash('success', 'Preorder #' . $orderId . ' tercatat. Kue mulai dibuat setelah DP 50% terkonfirmasi. Admin akan menghubungi Anda untuk pembayaran dan ongkir Medan.');
-            header('Location: orders.php');
+            set_flash('success', 'Preorder #' . order_code($orderId) . ' berhasil dicatat. Silakan selesaikan pembayaran DP 50% di bawah ini.');
+            header('Location: ' . app_url('payment.php?id=' . $orderId));
             exit;
         } catch (Throwable $exception) {
             if ($pdo->inTransaction()) {
@@ -75,12 +75,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$minimumDeliveryDate = new DateTimeImmutable('today +3 days');
+$minimumDeliveryDate = min_preorder_datetime();
+$minDateStr = min_preorder_date();
 $savedDeliveryDate = trim((string) ($_SESSION['preorder_delivery_date'] ?? ''));
 $parsedSavedDeliveryDate = DateTimeImmutable::createFromFormat('!Y-m-d', $savedDeliveryDate);
+if ($parsedSavedDeliveryDate && $parsedSavedDeliveryDate < $minimumDeliveryDate) {
+    unset($_SESSION['preorder_delivery_date']);
+    $parsedSavedDeliveryDate = null;
+    $savedDeliveryDate = '';
+}
 $defaultDeliveryDate = $parsedSavedDeliveryDate && $parsedSavedDeliveryDate->format('Y-m-d') === $savedDeliveryDate && $parsedSavedDeliveryDate >= $minimumDeliveryDate
     ? $savedDeliveryDate
-    : $minimumDeliveryDate->format('Y-m-d');
+    : $minDateStr;
 
 $cartTotal = 0.0;
 $cartIds = array_values(array_filter(array_map('intval', array_keys($cart))));
@@ -97,10 +103,13 @@ $pageTitle = 'Pemesanan';
 require __DIR__ . '/includes/header.php';
 ?>
 <main class="page-shell checkout-page">
-    <nav class="checkout-steps" aria-label="Tahap pemesanan"><span class="is-current"><b>1</b> Keranjang</span><span
-            class="is-current"><b>2</b> Data penerima</span><span><b>3</b> Konfirmasi DP</span></nav>
+    <nav class="checkout-steps" aria-label="Tahap pemesanan">
+        <span class="is-complete"><b>&#10003;</b> 1 Keranjang</span>
+        <span class="is-current"><b>2</b> Data penerima</span>
+        <span><b>3</b> Pembayaran DP</span>
+    </nav>
     <div class="page-heading">
-        <p class="eyebrow">PREORDER KUE / MEDAN</p>
+        <p class="eyebrow">PREORDER KUE</p>
         <h1>Data pesanan</h1>
         <p>Periksa jadwal dan tujuan penerimaan sebelum preorder dicatat.</p>
     </div>
@@ -115,24 +124,35 @@ require __DIR__ . '/includes/header.php';
                 <label>Nomor WhatsApp<input name="phone" required maxlength="40" inputmode="tel"
                         value="<?= e($_POST['phone'] ?? '') ?>"></label>
             </div>
-            <label>Tanggal pengiriman<input type="date" name="delivery_date"
-                    min="<?= e($minimumDeliveryDate->format('Y-m-d')) ?>" required
-                    value="<?= e($_POST['delivery_date'] ?? $defaultDeliveryDate) ?>"><small>Jadwal
-                    pre-order paling cepat 3 hari setelah pemesanan.</small></label>
-            <label>Metode penerimaan<select name="fulfillment">
+            <label>Tanggal pengiriman
+                <input type="date" name="delivery_date" id="delivery_date_input"
+                    min="<?= e($minDateStr) ?>" required
+                    value="<?= e($_POST['delivery_date'] ?? $defaultDeliveryDate) ?>"
+                    onchange="validateCheckoutDate(this)"
+                    oninput="validateCheckoutDate(this)">
+                <small>Pemesanan minimal 3 hari sebelum pengiriman (tidak bisa besok atau lusa). Jadwal dapat
+                    disesuaikan kembali oleh admin melalui chat jika antrean dapur sedang penuh.</small>
+            </label>
+            <label>Metode penerimaan
+                <select name="fulfillment">
                     <option value="delivery"
                         <?= ($_POST['fulfillment'] ?? ($_SESSION['preorder_fulfillment'] ?? 'delivery')) === 'delivery' ? 'selected' : '' ?>>
                         Antar ke alamat</option>
                     <option value="pickup"
                         <?= ($_POST['fulfillment'] ?? ($_SESSION['preorder_fulfillment'] ?? 'delivery')) === 'pickup' ? 'selected' : '' ?>>
-                        Ambil sendiri</option>
-                </select></label>
-            <label>Alamat pengiriman<textarea name="address" maxlength="2000"
-                    placeholder="Wajib untuk pengantaran: jalan, kelurahan, kecamatan, Kota Medan"><?= e($_POST['address'] ?? '') ?></textarea><small>Kosongkan
-                    jika memilih ambil sendiri.</small></label>
-            <label>Catatan pesanan <small>Opsional</small><textarea name="notes" maxlength="500"
-                    placeholder="Ucapan kartu atau catatan untuk admin..."><?= e($_POST['notes'] ?? '') ?></textarea></label>
-            <button class="button button-dark" type="submit">Konfirmasi preorder</button>
+                        Ambil sendiri di Toko</option>
+                </select>
+            </label>
+            <label>Alamat pengiriman
+                <textarea name="address" maxlength="2000"
+                    placeholder="Wajib untuk pengantaran: jalan, kelurahan, kecamatan, Kota"><?= e($_POST['address'] ?? '') ?></textarea>
+                <small>Kosongkan jika memilih ambil sendiri di toko.</small>
+            </label>
+            <label>Catatan pesanan <small>Opsional</small>
+                <textarea name="notes" maxlength="500"
+                    placeholder="Ucapan kartu atau catatan untuk admin..."><?= e($_POST['notes'] ?? '') ?></textarea>
+            </label>
+            <button class="button button-dark" type="submit">Konfirmasi & Lanjut Bayar DP 50% &rarr;</button>
         </form>
         <aside class="checkout-aside">
             <section class="summary-panel">
@@ -142,14 +162,37 @@ require __DIR__ . '/includes/header.php';
                 <div class="summary-row"><span>DP 50% sebelum
                         dibuat</span><strong><?= rupiah(round($cartTotal * 0.5, 2)) ?></strong></div>
                 <div class="summary-row"><span>Ongkir</span><span>Dinegosiasikan</span></div>
-                <p class="payment-note">Admin mengonfirmasi ongkir lewat chat. Pesanan diproses setelah DP diterima.</p>
-                <a class="text-link" href="chat.php">Tanya admin</a>
+                <p class="payment-note">Admin mengonfirmasi ongkir lewat chat. Pesanan diproses setelah DP 50%
+                    terverifikasi.</p>
+                <a class="button button-outline button-small" href="chat.php">Tanya ongkir ke admin</a>
             </section>
-            <section class="checkout-rule"><strong>Setelah konfirmasi</strong>
-                <p>Admin akan memeriksa jadwal, mengirim rincian DP, dan membantu negosiasi ongkir. Produksi dimulai
-                    setelah DP 50% terverifikasi.</p>
+            <section class="checkout-rule">
+                <strong>Ketentuan Pre-order</strong>
+                <p>Kue dibuat segar berdasarkan pesanan. DP 50% diperlukan sebelum mulai dipanggang. Sisa pelunasan dan
+                    ongkir dibayarkan sebelum pesanan dikirim.</p>
             </section>
         </aside>
     </div>
 </main>
+
+<script>
+const minDeliveryDateStr = "<?= e($minDateStr) ?>";
+function validateCheckoutDate(input) {
+    if (!input.value || input.value < minDeliveryDateStr) {
+        alert("Tanggal pre-order tidak bisa dipilih untuk hari ini, besok, atau lusa. Pemesanan minimal 3 hari dari sekarang (" + minDeliveryDateStr + ").\n\nJadwal pengiriman dapat disesuaikan kembali oleh admin melalui chat jika antrean dapur padat.");
+        input.value = minDeliveryDateStr;
+    }
+}
+
+document.querySelector('.checkout-layout form')?.addEventListener('submit', function(e) {
+    const input = document.getElementById('delivery_date_input');
+    if (input && (!input.value || input.value < minDeliveryDateStr)) {
+        e.preventDefault();
+        alert("Tanggal pre-order minimal 3 hari setelah dipesan.");
+        input.value = minDeliveryDateStr;
+        input.focus();
+    }
+});
+</script>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>

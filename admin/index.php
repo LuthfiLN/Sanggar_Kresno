@@ -5,103 +5,214 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/config.php';
 require_admin();
 $pdo = db();
+
+$greeting = greeting_time();
+$todayStr = indo_date(date('Y-m-d'));
+
+// Temukan batch berikutnya yang aktif
 $nextBatch = $pdo->query("SELECT MIN(delivery_date) FROM orders WHERE status <> 'cancelled' AND delivery_date >= CURDATE()")->fetchColumn();
 $requestedBatch = trim((string) ($_GET['batch'] ?? ''));
-$batchDate = DateTimeImmutable::createFromFormat('!Y-m-d', $requestedBatch ?: (string) ($nextBatch ?: date('Y-m-d')));
-if (!$batchDate || $batchDate->format('Y-m-d') !== ($requestedBatch ?: (string) ($nextBatch ?: date('Y-m-d')))) {
-    $batchDate = new DateTimeImmutable('today');
+$batchDate = DateTimeImmutable::createFromFormat('!Y-m-d', $requestedBatch ?: (string) ($nextBatch ?: date('Y-m-d', strtotime('+3 days'))));
+
+if (!$batchDate) {
+    $batchDate = min_preorder_datetime();
 }
 $batch = $batchDate->format('Y-m-d');
+$batchFormatted = indo_date($batch);
 
-$statsQuery = $pdo->prepare("SELECT COUNT(*) AS order_count, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count, COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total WHEN payment_status = 'dp_paid' THEN dp_amount ELSE 0 END), 0) AS received_amount FROM orders WHERE delivery_date = ? AND status <> 'cancelled'");
+// 4 Statistik Metric Cards Sesuai Gambar 3.29 & 3.39
+$statsQuery = $pdo->prepare("SELECT 
+    COUNT(*) AS total_orders,
+    SUM(CASE WHEN payment_status = 'dp_paid' THEN 1 ELSE 0 END) AS dp_paid_count,
+    SUM(CASE WHEN payment_status = 'unpaid' THEN 1 ELSE 0 END) AS pending_count,
+    COALESCE(SUM(CASE WHEN payment_status IN ('dp_paid', 'paid') THEN dp_amount ELSE 0 END), 0) AS dp_received,
+    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN (total + shipping_fee) WHEN payment_status = 'dp_paid' THEN ((total + shipping_fee) - dp_amount) ELSE (total + shipping_fee) END), 0) AS remaining_bill
+FROM orders WHERE delivery_date = ? AND status <> 'cancelled'");
 $statsQuery->execute([$batch]);
 $batchStats = $statsQuery->fetch();
-$stats = [
-    'orders' => (int) $batchStats['order_count'],
-    'pending' => (int) $batchStats['pending_count'],
-    'products' => (int) $pdo->query('SELECT COUNT(*) FROM products WHERE is_active = 1')->fetchColumn(),
-    'revenue' => (float) $batchStats['received_amount'],
-];
+
+// Jumlah pesan pelanggan yang belum dibalas oleh admin
+$unreadChatCount = (int) $pdo->query("SELECT COUNT(DISTINCT customer_id) FROM messages WHERE id IN (SELECT MAX(id) FROM messages GROUP BY customer_id) AND sender_role = 'customer'")->fetchColumn();
+
+// Pesanan terbaru pada batch ini
 $ordersQuery = $pdo->prepare("SELECT o.*, u.name AS customer_name, (SELECT GROUP_CONCAT(CONCAT(oi.product_name, ' x', oi.quantity) SEPARATOR ', ') FROM order_items oi WHERE oi.order_id = o.id) AS item_summary FROM orders o JOIN users u ON u.id = o.user_id WHERE o.delivery_date = ? AND o.status <> 'cancelled' ORDER BY o.created_at DESC LIMIT 10");
 $ordersQuery->execute([$batch]);
 $orders = $ordersQuery->fetchAll();
-$productionQuery = $pdo->prepare("SELECT p.name, p.category, SUM(oi.quantity) AS quantity FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN products p ON p.id = oi.product_id WHERE o.delivery_date = ? AND o.payment_status IN ('dp_paid', 'paid') AND o.status = 'processing' GROUP BY p.id, p.name, p.category ORDER BY p.name");
+
+// Kebutuhan Produksi Sesuai Gambar 3.29 (Hanya pesanan yang sudah DP Paid / Sedang dibuat)
+$productionQuery = $pdo->prepare("SELECT p.name, p.category, SUM(oi.quantity) AS quantity FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN products p ON p.id = oi.product_id WHERE o.delivery_date = ? AND o.payment_status IN ('dp_paid', 'paid') AND o.status IN ('pending', 'processing') GROUP BY p.id, p.name, p.category ORDER BY quantity DESC");
 $productionQuery->execute([$batch]);
 $productionItems = $productionQuery->fetchAll();
-$pageTitle = 'Ringkasan batch';
+
+$pageTitle = 'Ringkasan Batch';
 $adminActive = 'overview';
 require dirname(__DIR__) . '/includes/admin_header.php';
 ?>
-<main class="page-shell admin-dashboard">
-    <div class="admin-dashboard-heading">
-        <div>
-            <p class="eyebrow">RINGKASAN BATCH</p>
-            <h1>Pesanan yang perlu disiapkan</h1>
-            <p>Angka kas mencakup DP terverifikasi dan pelunasan untuk batch terpilih.</p>
+<main class="admin-page-wrap">
+    <!-- Header Dashboard Sesuai Gambar 3.29 & 3.39 -->
+    <div class="admin-dashboard-hero">
+        <div class="dash-hero-text">
+            <span class="dash-date-badge"><?= strtoupper($todayStr) ?></span>
+            <h1 class="dash-greeting"><?= e($greeting) ?></h1>
+            <p class="dash-subtext">Yang perlu disiapkan untuk batch pengiriman berikutnya.</p>
         </div>
-        <form class="batch-picker" method="get"><label for="batch-date">Batch pengiriman</label><input id="batch-date"
-                type="date" name="batch" value="<?= e($batch) ?>"><button class="button button-outline button-small"
-                type="submit">Tampilkan</button></form>
+
+        <form class="batch-selector-form" method="get">
+            <label for="batch-date-picker">Pilih Batch Pre-order</label>
+            <div class="batch-input-group">
+                <input id="batch-date-picker" type="date" name="batch" value="<?= e($batch) ?>" onchange="this.form.submit()">
+                <button type="submit" class="button button-solid-black button-small">Tampilkan</button>
+            </div>
+        </form>
     </div>
-    <section class="admin-grid">
-        <div class="stat"><span>Preorder batch ini</span><strong><?= $stats['orders'] ?></strong></div>
-        <div class="stat"><span>Menunggu DP</span><strong><?= $stats['pending'] ?></strong></div>
-        <div class="stat"><span>Menu aktif</span><strong><?= $stats['products'] ?></strong></div>
-        <div class="stat"><span>Kas terverifikasi</span><strong><?= rupiah($stats['revenue']) ?></strong></div>
+
+    <!-- 4 Cards Metrik Sesuai Gambar 3.29 & 3.39 -->
+    <section class="admin-stat-quad-grid">
+        <div class="stat-card-white">
+            <span class="stat-label">Pesanan aktif</span>
+            <h2 class="stat-number"><?= (int) $batchStats['total_orders'] ?></h2>
+            <small class="stat-meta"><?= (int) $batchStats['dp_paid_count'] ?> DP Paid &bull; <?= (int) $batchStats['pending_count'] ?> Pending</small>
+        </div>
+
+        <div class="stat-card-white">
+            <span class="stat-label">DP diterima</span>
+            <h2 class="stat-number"><?= rupiah($batchStats['dp_received']) ?></h2>
+            <small class="stat-meta">Total DP batch <?= e($batchFormatted) ?></small>
+        </div>
+
+        <div class="stat-card-white">
+            <span class="stat-label">Perlu balasan</span>
+            <h2 class="stat-number"><?= $unreadChatCount ?></h2>
+            <small class="stat-meta">Negosiasi ongkir &bull; Medan</small>
+        </div>
+
+        <div class="stat-card-white">
+            <span class="stat-label">Sisa tagihan</span>
+            <h2 class="stat-number"><?= rupiah($batchStats['remaining_bill']) ?></h2>
+            <small class="stat-meta">Dari <?= (int) $batchStats['dp_paid_count'] ?> pesanan DP Paid</small>
+        </div>
     </section>
-    <div class="admin-dashboard-grid">
-        <section class="admin-section">
-            <div class="section-top admin-section-top">
-                <div>
-                    <p class="eyebrow">BATCH <?= e(date('d M Y', strtotime($batch))) ?></p>
-                    <h2>Preorder terbaru</h2>
-                </div><a class="text-link" href="kelola_orders.php">Semua preorder &#8594;</a>
-            </div>
-            <div class="panel table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No.</th>
-                            <th>Pelanggan / kue</th>
-                            <th>DP</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!$orders): ?><tr>
-                            <td colspan="5">Belum ada preorder untuk batch ini.</td>
-                        </tr><?php endif; ?>
-                        <?php foreach ($orders as $order): ?><tr>
-                            <td>#<?= (int) $order['id'] ?></td>
-                            <td><?= e($order['customer_name']) ?><br><small><?= e($order['item_summary'] ?? '') ?></small>
-                            </td>
-                            <td><?= rupiah($order['dp_amount']) ?></td>
-                            <td><?= rupiah($order['total']) ?></td>
-                            <td><span
-                                    class="status status-<?= e($order['status']) ?>"><?= e(order_status_label($order['status'])) ?></span>
-                            </td>
-                        </tr><?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        <aside class="admin-section">
-            <h2>Kebutuhan produksi</h2>
-            <div class="panel production-panel">
-                <p>Hanya preorder dengan DP yang sudah terverifikasi.</p>
-                <?php if (!$productionItems): ?><div class="empty-state">Belum ada kue yang masuk tahap produksi.</div>
-                <?php endif; ?>
-                <?php foreach ($productionItems as $item): ?><div class="production-item">
-                    <span><?= e($item['name']) ?><small><?= e($item['category']) ?></small></span><strong><?= (int) $item['quantity'] ?>
-                        toples</strong>
-                </div><?php endforeach; ?>
-            </div>
-            <h2 class="quick-actions-title">Akses cepat</h2>
-            <div class="panel form-stack"><a class="button button-dark" href="products.php">Kelola produk</a><a
-                    class="button button-outline" href="kelola_orders.php">Kelola pesanan</a><a
-                    class="button button-outline" href="reports.php">Laporan penjualan</a><a
-                    class="button button-outline" href="users.php">Akun admin</a></div>
+
+    <!-- Layout 2 Kolom: Kiri Tabel Pesanan, Kanan Kebutuhan Produksi & Jadwal -->
+    <div class="admin-overview-columns">
+        <!-- Kolom Kiri: Pesanan Terbaru -->
+        <div class="overview-left-col">
+            <section class="panel admin-panel-box">
+                <div class="panel-header-row">
+                    <div>
+                        <h2>Pesanan terbaru &bull; <?= e($batchFormatted) ?></h2>
+                        <small class="panel-sub">Daftar pesanan pre-order masuk untuk jadwal pengantaran ini.</small>
+                    </div>
+                    <a class="text-link-primary" href="kelola_orders.php">Lihat semua pesanan &rarr;</a>
+                </div>
+
+                <div class="table-wrap-clean">
+                    <table class="admin-data-table">
+                        <thead>
+                            <tr>
+                                <th>PESANAN</th>
+                                <th>PELANGGAN / ITEM</th>
+                                <th>DP</th>
+                                <th>TOTAL</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!$orders): ?>
+                                <tr>
+                                    <td colspan="5" class="empty-table-cell">Belum ada pesanan untuk jadwal batch ini.</td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach ($orders as $o): ?>
+                                <?php $isPaid = in_array($o['payment_status'], ['dp_paid', 'paid'], true); ?>
+                                <tr>
+                                    <td>
+                                        <strong>#<?= e(order_code($o)) ?></strong>
+                                    </td>
+                                    <td>
+                                        <strong><?= e($o['customer_name']) ?></strong>
+                                        <small class="cell-sub-item"><?= e($o['item_summary'] ?? '') ?></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
+                                            <?= $isPaid ? 'DP Paid' : 'Pending' ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong><?= rupiah((float) $o['total'] + (int) ($o['shipping_fee'] ?? 0)) ?></strong>
+                                    </td>
+                                    <td>
+                                        <a class="button button-outline-dark button-small" href="kelola_orders.php?order=<?= (int) $o['id'] ?>">Detail</a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Card Daftar Tindak Lanjut Sesuai Gambar 3.29 -->
+            <section class="panel admin-panel-box followup-box">
+                <h2>Daftar tindak lanjut</h2>
+                <div class="followup-list">
+                    <div class="followup-item">
+                        <span class="warn-dot">&#9888;</span>
+                        <div>
+                            <strong><?= (int) $batchStats['pending_count'] ?> pesanan belum membayar DP</strong>
+                            <p>Batas DP hari ini, 18.00 WIB. Kirim pengingat sebelum batch ditutup.</p>
+                        </div>
+                    </div>
+                    <div class="followup-item">
+                        <span class="chat-dot">&#128172;</span>
+                        <div>
+                            <strong>Negosiasi ongkir: <?= $unreadChatCount ?> percakapan menunggu</strong>
+                            <p>Tanggapi pertanyaan ongkir area Medan dan sepakati jadwal pengiriman.</p>
+                        </div>
+                        <a class="button button-solid-black button-small" href="<?= e(app_url('chat.php')) ?>">Buka inbox negosiasi</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Kolom Kanan: Kebutuhan Produksi & Jadwal Batch -->
+        <aside class="overview-right-col">
+            <!-- Kebutuhan Produksi Sesuai Gambar 3.29 -->
+            <section class="panel admin-panel-box">
+                <h2>Kebutuhan produksi</h2>
+                <small class="panel-sub">Jadwal <?= e($batchFormatted) ?> &bull; Hanya pesanan DP Paid</small>
+
+                <div class="production-summary-list">
+                    <?php if (!$productionItems): ?>
+                        <p class="empty-hint-text">Belum ada pesanan dengan DP terverifikasi untuk batch ini.</p>
+                    <?php endif; ?>
+                    <?php foreach ($productionItems as $pItem): ?>
+                        <div class="production-summary-row">
+                            <span class="prod-name"><?= e($pItem['name']) ?></span>
+                            <strong class="prod-qty"><?= (int) $pItem['quantity'] ?> toples</strong>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="batch-card-foot">
+                    <button type="button" class="button button-outline-dark button-full button-small" onclick="window.print()">
+                        &#128438; Unduh / Cetak daftar produksi
+                    </button>
+                </div>
+            </section>
+
+            <!-- Jadwal Batch Card Sesuai Gambar 3.29 -->
+            <section class="panel admin-panel-box schedule-box">
+                <h2>Jadwal batch</h2>
+                <h3 class="schedule-batch-date"><?= e($batchFormatted) ?></h3>
+                <p class="schedule-time-desc">
+                    10.00: Batas pelunasan 100%<br>
+                    10.00&ndash;12.00: Ambil sendiri di toko<br>
+                    13.00&ndash;16.00: Pengiriman kurir area Medan
+                </p>
+                <a class="button button-solid-black button-full button-small" href="kelola_orders.php?date=<?= e($batch) ?>">
+                    Kelola batch ini &rarr;
+                </a>
+            </section>
         </aside>
     </div>
 </main>

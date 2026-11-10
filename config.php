@@ -125,6 +125,15 @@ function set_flash(string $type, string $message): void
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
 }
 
+function payment_status_label(string $status): string
+{
+    return [
+        'unpaid' => 'DP 50% belum dibayar',
+        'dp_paid' => 'DP 50% terverifikasi',
+        'paid' => 'Lunas 100%',
+    ][$status] ?? ucfirst($status);
+}
+
 function take_flash(): ?array
 {
     $flash = $_SESSION['flash'] ?? null;
@@ -148,11 +157,69 @@ function order_status_label(string $status): string
     ][$status] ?? ucfirst($status);
 }
 
-function payment_status_label(string $status): string
+function order_code(int|array $order): string
 {
-    return [
-        'unpaid' => 'DP 50% belum dibayar',
-        'dp_paid' => 'DP 50% terverifikasi',
-        'paid' => 'Lunas 100%',
-    ][$status] ?? ucfirst($status);
+    if (is_int($order)) {
+        return sprintf('SR-%s-%03d', date('ymd'), $order);
+    }
+    $createdAt = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
+    $id = (int) ($order['id'] ?? 0);
+    return sprintf('SR-%s-%03d', date('ymd', $createdAt), $id);
+}
+
+function min_preorder_datetime(): DateTimeImmutable
+{
+    return new DateTimeImmutable('today + 3 days');
+}
+
+function min_preorder_date(): string
+{
+    return min_preorder_datetime()->format('Y-m-d');
+}
+
+function greeting_time(): string
+{
+    $hour = (int) date('H');
+    if ($hour >= 4 && $hour < 11) {
+        return 'Selamat pagi';
+    }
+    if ($hour >= 11 && $hour < 15) {
+        return 'Selamat siang';
+    }
+    if ($hour >= 15 && $hour < 18) {
+        return 'Selamat sore';
+    }
+    return 'Selamat malam';
+}
+
+function indo_date(string $dateStr, bool $withDay = true): string
+{
+    if (!$dateStr) {
+        return '-';
+    }
+    $timestamp = strtotime($dateStr);
+    if (!$timestamp) {
+        return $dateStr;
+    }
+    $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    $months = [
+        1 => 'Jan',
+        2 => 'Feb',
+        3 => 'Mar',
+        4 => 'Apr',
+        5 => 'Mei',
+        6 => 'Jun',
+        7 => 'Jul',
+        8 => 'Agu',
+        9 => 'Sep',
+        10 => 'Okt',
+        11 => 'Nov',
+        12 => 'Des'
+    ];
+    $dayName = $days[(int) date('w', $timestamp)];
+    $dayNum = date('d', $timestamp);
+    $monthName = $months[(int) date('n', $timestamp)];
+    $year = date('Y', $timestamp);
+
+    return $withDay ? "{$dayName}, {$dayNum} {$monthName} {$year}" : "{$dayNum} {$monthName} {$year}";
 }

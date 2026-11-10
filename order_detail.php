@@ -4,97 +4,254 @@ declare(strict_types=1);
 
 require __DIR__ . '/config.php';
 $user = require_login();
+
 $orderId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 if (!$orderId) {
-    http_response_code(404);
-    exit('Preorder tidak ditemukan.');
+    header('Location: ' . app_url('orders.php'));
+    exit;
 }
-$orderQuery = db()->prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?');
-$orderQuery->execute([$orderId, $user['id']]);
+
+$pdo = db();
+$orderQuery = $pdo->prepare('SELECT * FROM orders WHERE id = ? AND (user_id = ? OR ? = "admin")');
+$orderQuery->execute([$orderId, $user['id'], $user['role']]);
 $order = $orderQuery->fetch();
+
 if (!$order) {
-    http_response_code(404);
-    exit('Preorder tidak ditemukan.');
+    set_flash('error', 'Pesanan tidak ditemukan.');
+    header('Location: ' . app_url('orders.php'));
+    exit;
 }
-$itemsQuery = db()->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ? ORDER BY id');
+
+$itemsQuery = $pdo->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ? ORDER BY id');
 $itemsQuery->execute([$orderId]);
 $items = $itemsQuery->fetchAll();
-$statusOrder = ['pending', 'processing', 'shipped', 'completed'];
-$statusPosition = array_search($order['status'], $statusOrder, true);
-$statusPosition = $statusPosition === false ? -1 : $statusPosition;
-$pageTitle = 'Detail preorder #' . $orderId;
+
+// Mapping status tahapan perjalanan pesanan (5 tahap sesuai Gambar 3.26)
+$isDpPaid = in_array($order['payment_status'], ['dp_paid', 'paid'], true);
+$isFullyPaid = $order['payment_status'] === 'paid';
+
+$stepStatus = 1; // 1: Pesanan dibuat
+if ($isDpPaid) {
+    $stepStatus = 2; // 2: DP diterima & diverifikasi
+}
+if ($order['status'] === 'processing') {
+    $stepStatus = 3; // 3: Menunggu jadwal produksi / Sedang diproduksi
+} elseif ($order['status'] === 'shipped') {
+    $stepStatus = 4; // 4: Dikirim ke alamatmu
+} elseif ($order['status'] === 'completed') {
+    $stepStatus = 5; // 5: Pesanan diterima
+}
+
+$orderCode = order_code($order);
+$totalWithShipping = (float) $order['total'] + (int) ($order['shipping_fee'] ?? 0);
+$paidAmount = $isDpPaid ? (float) $order['dp_amount'] : 0.0;
+if ($isFullyPaid) {
+    $paidAmount = $totalWithShipping;
+}
+$remainingAmount = max(0.0, $totalWithShipping - $paidAmount);
+
+$scheduledDateStr = $order['delivery_date'] ? indo_date($order['delivery_date']) : 'Belum ditentukan';
+$pageTitle = 'Status Preorder #' . $orderCode;
+$currentNav = 'orders';
 require __DIR__ . '/includes/header.php';
 ?>
 <main class="page-shell order-detail-page">
-    <p class="product-breadcrumb"><a href="orders.php">&#8592; Pesanan saya</a> / Preorder #<?= (int) $order['id'] ?>
-    </p>
-    <div class="order-detail-heading">
-        <div>
-            <p class="eyebrow">PREORDER / MEDAN</p>
-            <h1><?= $order['status'] === 'completed' ? 'Pesanan selesai' : 'Status preorder' ?></h1>
-            <p>Terima kasih, <?= e($order['recipient_name']) ?>. Pantau tahapan dan pembayaran pesananmu di sini.</p>
+    <nav class="product-breadcrumb-bar" aria-label="Breadcrumb">
+        <a href="<?= e(app_url('orders.php')) ?>">&larr; Riwayat Pesanan</a>
+        <span class="sep">/</span>
+        <span class="current-item">Pre-order #<?= e($orderCode) ?></span>
+    </nav>
+
+    <!-- Banner Konfirmasi Header Sesuai Gambar 3.26 & 3.36 -->
+    <div class="order-confirmed-banner">
+        <div class="confirmed-left">
+            <div class="confirmed-title-row">
+                <span class="confirmed-check">&#10003;</span>
+                <div>
+                    <h1><?= $isDpPaid ? 'Pesananmu terkonfirmasi!' : 'Menunggu pembayaran DP' ?></h1>
+                    <p><?= $isDpPaid ? 'Terima kasih, ' . e($order['recipient_name']) . '. DP sudah diterima, sekarang giliran dapur kami menyiapkannya.' : 'Pesanan telah dicatat. Selesaikan pembayaran DP 50% untuk mengamankan slot batch produksi.' ?></p>
+                </div>
+            </div>
         </div>
-        <span class="status status-<?= e($order['status']) ?>"><?= e(order_status_label($order['status'])) ?></span>
+        <div class="confirmed-meta-tags">
+            <span class="order-tag-num">#<?= e($orderCode) ?></span>
+            <span class="status-badge-clean status-<?= e($order['payment_status']) ?>">
+                <?= $isDpPaid ? 'DP Paid &bull; Terverifikasi' : 'Menunggu DP 50%' ?>
+            </span>
+            <span class="status-badge-clean status-<?= e($order['status']) ?>">
+                <?= e(order_status_label($order['status'])) ?>
+            </span>
+        </div>
     </div>
-    <div class="order-detail-layout">
-        <div class="order-detail-main">
-            <section class="panel order-progress-panel">
-                <h2>Perjalanan pesanan</h2>
-                <ol class="order-progress">
-                    <?php foreach ($statusOrder as $index => $status): ?>
-                    <?php if ($status === 'processing' && $order['payment_status'] === 'unpaid') {
-                            $label = 'Menunggu DP';
-                        } else {
-                            $label = order_status_label($status);
-                        } ?>
-                    <li
-                        class="<?= $index <= $statusPosition ? 'is-complete' : '' ?> <?= $index === $statusPosition ? 'is-current' : '' ?>">
-                        <span
-                            class="order-progress-dot"><?= $index < $statusPosition ? '&#10003;' : (int) ($index + 1) ?></span>
-                        <div><strong><?= e($label) ?></strong><small><?php if ($status === 'pending'): ?>Preorder
-                                tercatat, menunggu verifikasi DP.<?php elseif ($status === 'processing'): ?>Kue
-                                disiapkan setelah DP diterima.<?php elseif ($status === 'shipped'): ?>Pesanan sedang
-                                dalam pengiriman.<?php else: ?>Konfirmasi pesanan setelah
-                                diterima.<?php endif; ?></small></div>
+
+    <div class="order-detail-layout-grid">
+        <!-- Kolom Kiri: Perjalanan Pesanan & Detail Produk / Alamat -->
+        <div class="order-detail-main-stack">
+            <!-- Stepper Perjalanan Pesanan -->
+            <section class="panel order-stepper-panel">
+                <h2 class="panel-inner-title">Perjalanan pesanan</h2>
+
+                <div class="delivery-highlight-pill">
+                    <span class="pill-icon">&#128197;</span>
+                    <div>
+                        <strong>Dijadwalkan untuk <?= e($scheduledDateStr) ?></strong>
+                        <small>Antar 13.00&ndash;16.00 WIB &bull; <?= e($order['address']) ?></small>
+                    </div>
+                </div>
+
+                <ol class="journey-stepper-list">
+                    <!-- Step 1: Pesanan Dibuat -->
+                    <li class="journey-step <?= $stepStatus >= 1 ? 'is-done' : '' ?> <?= $stepStatus === 1 ? 'is-current' : '' ?>">
+                        <span class="journey-dot"><?= $stepStatus > 1 ? '&#10003;' : '1' ?></span>
+                        <div class="journey-info">
+                            <strong>Pesanan dibuat</strong>
+                            <small><?= indo_date($order['created_at']) ?>, <?= date('H.i', strtotime($order['created_at'])) ?> WIB</small>
+                        </div>
                     </li>
-                    <?php endforeach; ?>
+
+                    <!-- Step 2: DP Diterima & Diverifikasi -->
+                    <li class="journey-step <?= $stepStatus >= 2 ? 'is-done' : '' ?> <?= $stepStatus === 2 ? 'is-current' : '' ?>">
+                        <span class="journey-dot"><?= $stepStatus > 2 ? '&#10003;' : '2' ?></span>
+                        <div class="journey-info">
+                            <strong>DP diterima &amp; diverifikasi</strong>
+                            <small><?= $isDpPaid ? 'DP 50% (' . rupiah($order['dp_amount']) . ') terverifikasi otomatis via QRIS/VA' : 'Menunggu pembayaran DP 50%' ?></small>
+                        </div>
+                    </li>
+
+                    <!-- Step 3: Menunggu Jadwal Produksi -->
+                    <li class="journey-step <?= $stepStatus >= 3 ? 'is-done' : '' ?> <?= $stepStatus === 3 ? 'is-current' : '' ?>">
+                        <span class="journey-dot"><?= $stepStatus > 3 ? '&#10003;' : '3' ?></span>
+                        <div class="journey-info">
+                            <strong>Menunggu jadwal produksi &amp; memanggang</strong>
+                            <small><?= $stepStatus >= 3 ? 'Dapur menyiapkan bahan & memanggang kue segar' : 'Dimulai setelah DP terverifikasi' ?></small>
+                        </div>
+                    </li>
+
+                    <!-- Step 4: Dikirim ke Alamatmu / Siap Diambil -->
+                    <li class="journey-step <?= $stepStatus >= 4 ? 'is-done' : '' ?> <?= $stepStatus === 4 ? 'is-current' : '' ?>">
+                        <span class="journey-dot"><?= $stepStatus > 4 ? '&#10003;' : '4' ?></span>
+                        <div class="journey-info">
+                            <strong>Dikirim ke alamatmu / Siap diambil</strong>
+                            <small>Estimasi: <?= e($scheduledDateStr) ?> (13.00&ndash;16.00 WIB)</small>
+                        </div>
+                    </li>
+
+                    <!-- Step 5: Pesanan Diterima -->
+                    <li class="journey-step <?= $stepStatus >= 5 ? 'is-done' : '' ?> <?= $stepStatus === 5 ? 'is-current' : '' ?>">
+                        <span class="journey-dot">5</span>
+                        <div class="journey-info">
+                            <strong>Pesanan diterima</strong>
+                            <small>Konfirmasi selesai setelah kue dinikmati</small>
+                        </div>
+                    </li>
                 </ol>
-                <div class="delivery-date-box"><strong>Jadwal
-                        pengiriman</strong><span><?= $order['delivery_date'] ? e(date('l, d M Y', strtotime($order['delivery_date']))) : 'Belum ditentukan' ?></span><small><?= e($order['address']) ?></small>
-                </div>
             </section>
-            <section class="panel order-items-panel">
-                <h2>Produk & tujuan</h2>
-                <?php foreach ($items as $item): ?>
-                <div class="order-detail-item">
-                    <div><strong><?= e($item['product_name']) ?></strong><small><?= (int) $item['quantity'] ?> toples
-                            &middot; <?= rupiah($item['price']) ?> per toples</small></div>
-                    <b><?= rupiah((float) $item['price'] * (int) $item['quantity']) ?></b>
+
+            <!-- Panel Pesanan & Tujuan -->
+            <section class="panel order-items-target-panel">
+                <h2 class="panel-inner-title">Pesanan &amp; tujuan</h2>
+
+                <div class="order-items-table-list">
+                    <?php foreach ($items as $item): ?>
+                        <div class="order-item-clean-row">
+                            <div class="item-meta-group">
+                                <strong><?= e($item['product_name']) ?></strong>
+                                <small><?= (int) $item['quantity'] ?> toples &times; <?= rupiah($item['price']) ?></small>
+                            </div>
+                            <strong class="item-subtotal-val"><?= rupiah((float) $item['price'] * (int) $item['quantity']) ?></strong>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-                <div class="order-recipient"><strong><?= e($order['recipient_name']) ?> &middot;
-                        <?= e($order['phone']) ?></strong><span><?= e($order['address']) ?></span><?php if ($order['notes']): ?><small>Catatan:
-                        <?= e($order['notes']) ?></small><?php endif; ?></div>
+
+                <div class="recipient-card-clean">
+                    <strong><?= e($order['recipient_name']) ?> &bull; <?= e($order['phone']) ?></strong>
+                    <p class="recipient-addr"><?= nl2br(e($order['address'])) ?></p>
+                    <?php if ($order['notes']): ?>
+                        <p class="recipient-notes">Catatan: "<?= e($order['notes']) ?>"</p>
+                    <?php endif; ?>
+                    <div class="ongkir-status-tag">
+                        <?php if (!empty($order['shipping_fee'])): ?>
+                            <span class="tag-done">&#10003; Ongkir <?= rupiah($order['shipping_fee']) ?> (Disepakati)</span>
+                        <?php else: ?>
+                            <span class="tag-waiting">Ongkir dinegosiasikan via chat</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </section>
         </div>
-        <aside class="order-detail-aside">
+
+        <!-- Kolom Kanan: Rincian Pembayaran, Sisa Tagihan, & Bukti DP -->
+        <aside class="order-detail-aside-stack">
+            <!-- Rincian Pembayaran -->
             <section class="summary-panel">
                 <h2>Rincian pembayaran</h2>
-                <p class="order-reference">Preorder #<?= (int) $order['id'] ?> &middot; <?= count($items) ?> jenis kue
-                </p>
-                <div class="summary-row"><span>Subtotal produk</span><span><?= rupiah($order['total']) ?></span></div>
-                <div class="summary-row summary-total"><span>Total
-                        produk</span><span><?= rupiah($order['total']) ?></span></div>
-                <div class="dp-summary">
-                    <strong><?= e(payment_status_label($order['payment_status'])) ?></strong><b><?= rupiah($order['dp_amount']) ?></b><small>Sisa
-                        pelunasan <?= rupiah(max(0, (float) $order['total'] - (float) $order['dp_amount'])) ?></small>
+                <p class="order-reference">#<?= e($orderCode) ?> &bull; <?= count($items) ?> item</p>
+
+                <div class="summary-row">
+                    <span>Subtotal produk</span>
+                    <span><?= rupiah($order['total']) ?></span>
                 </div>
-                <p class="payment-note">Ongkir dinegosiasikan melalui chat. Admin mengonfirmasi pembayaran secara
-                    manual.</p>
+                <div class="summary-row">
+                    <span>Ongkir disepakati</span>
+                    <span><?= !empty($order['shipping_fee']) ? rupiah($order['shipping_fee']) : 'Dinegosiasikan' ?></span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total pesanan</span>
+                    <span><?= rupiah($totalWithShipping) ?></span>
+                </div>
+                <div class="summary-row dp-paid-row">
+                    <span>DP 50% <?= $isDpPaid ? 'sudah dibayar' : 'belum dibayar' ?></span>
+                    <strong><?= $isDpPaid ? rupiah($order['dp_amount']) : 'Rp 0' ?></strong>
+                </div>
+                <div class="summary-row remaining-row">
+                    <span>Sisa pelunasan</span>
+                    <span><?= rupiah($remainingAmount) ?></span>
+                </div>
+                <small class="summary-note">Pelunasan paling lambat <?= e($scheduledDateStr) ?>, 10:00 WIB, sebelum pesanan dikirim.</small>
             </section>
-            <section class="checkout-rule"><strong>Perlu bantuan?</strong>
-                <p>Tanyakan pembayaran, ongkir, atau jadwal preorder kepada admin.</p><a class="button button-outline"
-                    href="chat.php">Chat admin</a>
+
+            <!-- Card Sisa yang Perlu Dilunasi / Tombol Bayar DP -->
+            <section class="panel action-card-panel">
+                <span class="card-eyebrow">TAGIHAN SAAT INI</span>
+                <?php if (!$isDpPaid): ?>
+                    <h3 class="action-amount-large"><?= rupiah($order['dp_amount']) ?></h3>
+                    <p class="action-desc">DP 50% wajib dibayar terlebih dahulu untuk mengonfirmasi pesanan ke dapur.</p>
+                    <a class="button button-solid-black button-full" href="<?= e(app_url('payment.php?id=' . (int) $order['id'])) ?>">
+                        Bayar DP 50% Sekarang &rarr;
+                    </a>
+                <?php else: ?>
+                    <h3 class="action-amount-large"><?= rupiah($remainingAmount) ?></h3>
+                    <p class="action-desc">Sisa pelunasan produk dan ongkir sebelum kurir berangkat.</p>
+                    <button type="button" class="button button-solid-black button-full" onclick="alert('Pelunasan dapat ditransfer via QRIS/VA sebelum tanggal pengiriman. Silakan konfirmasi via Chat Admin.')">
+                        Lihat instruksi pelunasan
+                    </button>
+                <?php endif; ?>
+
+                <button type="button" class="button button-outline-dark button-full button-print" onclick="window.print()">
+                    &#128438; Unduh ringkasan pesanan
+                </button>
+            </section>
+
+            <!-- Bukti DP Sesuai Gambar 3.26 & 3.36 -->
+            <section class="panel proof-dp-panel">
+                <h3>Bukti DP</h3>
+                <div class="proof-row">
+                    <span>Status</span>
+                    <strong><?= $isDpPaid ? 'Terverifikasi' : 'Menunggu' ?></strong>
+                </div>
+                <div class="proof-row">
+                    <span>Metode</span>
+                    <strong>QRIS / Virtual Account</strong>
+                </div>
+                <div class="proof-row">
+                    <span>Waktu</span>
+                    <span><?= indo_date($order['created_at']) ?></span>
+                </div>
+                <div class="proof-actions">
+                    <a class="button button-outline-dark button-full button-small" href="<?= e(app_url('chat.php')) ?>">
+                        Chat admin toko
+                    </a>
+                </div>
             </section>
         </aside>
     </div>

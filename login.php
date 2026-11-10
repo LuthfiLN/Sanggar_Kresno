@@ -12,43 +12,82 @@ if ($activeUser) {
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $email = filter_var(trim((string) ($_POST['email'] ?? '')), FILTER_VALIDATE_EMAIL);
+    $loginInput = trim((string) ($_POST['username'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
-    $query = db()->prepare('SELECT id, password, role FROM users WHERE email = ?');
-    $query->execute([$email ?: '']);
-    $account = $query->fetch();
-    if ($account && password_verify($password, $account['password'])) {
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = (int) $account['id'];
-        header('Location: ' . app_url($account['role'] === 'admin' ? 'admin/index.php' : 'index.php'));
-        exit;
+
+    if ($loginInput === '' || $password === '') {
+        $error = 'Masukkan username atau email serta kata sandi.';
+    } else {
+        $query = db()->prepare('SELECT id, password, role FROM users WHERE email = ? OR name = ? LIMIT 1');
+        $query->execute([$loginInput, $loginInput]);
+        $account = $query->fetch();
+
+        if ($account && password_verify($password, $account['password'])) {
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = (int) $account['id'];
+            header('Location: ' . app_url($account['role'] === 'admin' ? 'admin/index.php' : 'index.php'));
+            exit;
+        }
+        $error = 'Username / email atau kata sandi salah.';
     }
-    $error = 'Email atau kata sandi belum cocok.';
 }
 
 $pageTitle = 'Masuk';
-require __DIR__ . '/includes/header.php';
 ?>
-<main class="page-shell">
-    <div class="auth-layout">
-        <div class="auth-art">
-            <p class="eyebrow">DAPUR TRESNO / MEDAN</p>
-            <h2>Manisnya Lebaran dimulai dari rumah.</h2>
-            <p>Masuk untuk mengikuti preorder atau mengelola toko.</p>
-        </div>
-        <section class="auth-form">
-            <p class="eyebrow">AKUN SANGGAR TRESNO</p>
-            <h1>Masuk</h1>
-            <?php if ($error): ?><div class="notice notice-error"><?= e($error) ?></div><?php endif; ?>
-            <form class="form-stack" method="post">
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#e5e5e5">
+    <title>Masuk | Sanggar Tresno</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/style.css')) ?>">
+</head>
+
+<body class="auth-body">
+    <div class="auth-screen-container">
+        <div class="auth-card-clean">
+            <div class="auth-card-header">
+                <a class="brand auth-brand" href="<?= e(app_url('index.php')) ?>">
+                    <span class="brand-mark">sr.</span>
+                    <span class="brand-text">
+                        Sanggar <strong>Tresno</strong>
+                        <small>Aneka Kue Rumahan &bull; PRE-ORDER</small>
+                    </span>
+                </a>
+            </div>
+
+            <h1 class="auth-card-title">Selamat datang</h1>
+
+            <?php if ($error): ?>
+                <div class="notice notice-error"><?= e($error) ?></div>
+            <?php endif; ?>
+
+            <form class="auth-clean-form" method="post" action="<?= e(app_url('login.php')) ?>">
                 <?= csrf_field() ?>
-                <label>Email<input type="email" name="email" required autocomplete="username"></label>
-                <label>Kata sandi<input type="password" name="password" required
-                        autocomplete="current-password"></label>
-                <button class="button button-dark" type="submit">Masuk</button>
+                
+                <div class="form-group-clean">
+                    <label for="username">Username</label>
+                    <input id="username" type="text" name="username" placeholder="Masukkan username" required autocomplete="username" value="<?= e($_POST['username'] ?? '') ?>">
+                </div>
+
+                <div class="form-group-clean">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" name="password" placeholder="Masukkan password" required autocomplete="current-password">
+                </div>
+
+                <button class="button button-solid-black button-full" type="submit">Masuk</button>
+                <a class="button button-outline-dark button-full" href="<?= e(app_url('register.php')) ?>">Daftar</a>
             </form>
-            <p class="auth-switch">Belum punya akun pelanggan? <a href="register.php">Daftar di sini</a></p>
-        </section>
+
+            <div class="auth-card-footer">
+                <a href="<?= e(app_url('index.php')) ?>" class="text-link-subtle">&larr; Kembali ke beranda toko</a>
+            </div>
+        </div>
     </div>
-</main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+</body>
+</html>

@@ -15,8 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim((string) ($_POST['name'] ?? ''));
     $email = filter_var(trim((string) ($_POST['email'] ?? '')), FILTER_VALIDATE_EMAIL);
     $password = (string) ($_POST['password'] ?? '');
-    if ($name === '' || !$email || strlen($password) < 10) {
-        $error = 'Lengkapi nama dan email. Kata sandi minimal 10 karakter.';
+
+    if ($name === '' || !$email || strlen($password) < 6) {
+        $error = 'Lengkapi nama, email yang valid, dan kata sandi minimal 6 karakter.';
     } else {
         try {
             $query = db()->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'customer')");
@@ -28,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         } catch (PDOException $exception) {
             if ($exception->getCode() === '23000') {
-                $error = 'Email ini sudah digunakan. Silakan masuk atau gunakan email lain.';
+                $error = 'Email ini sudah digunakan. Silakan gunakan email lain atau langsung masuk.';
             } else {
                 throw $exception;
             }
@@ -36,33 +37,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Daftar pelanggan';
-require __DIR__ . '/includes/header.php';
+$pageTitle = 'Daftar Akun';
 ?>
-<main class="page-shell">
-    <div class="auth-layout">
-        <div class="auth-art">
-            <p class="eyebrow">SANGGAR TRESNO</p>
-            <h2>Pesan kue segar untuk hari istimewa.</h2>
-            <p>Buat akun untuk memilih tanggal preorder dan memantau pembayaran DP.</p>
-        </div>
-        <section class="auth-form">
-            <p class="eyebrow">DAFTAR PELANGGAN</p>
-            <h1>Buat akun</h1>
-            <p>Pesanan dan percakapanmu tersimpan rapi di satu tempat.</p>
-            <?php if ($error): ?><div class="notice notice-error"><?= e($error) ?></div><?php endif; ?>
-            <form class="form-stack" method="post">
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#e5e5e5">
+    <title>Daftar Akun | Sanggar Tresno</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/style.css')) ?>">
+</head>
+
+<body class="auth-body">
+    <div class="auth-screen-container">
+        <div class="auth-card-clean">
+            <div class="auth-card-header">
+                <a class="brand auth-brand" href="<?= e(app_url('index.php')) ?>">
+                    <span class="brand-mark">sr.</span>
+                    <span class="brand-text">
+                        Sanggar <strong>Tresno</strong>
+                        <small>Aneka Kue Rumahan &bull; PRE-ORDER</small>
+                    </span>
+                </a>
+            </div>
+
+            <h1 class="auth-card-title">Daftar Akun Baru</h1>
+
+            <?php if ($error): ?>
+                <div class="notice notice-error"><?= e($error) ?></div>
+            <?php endif; ?>
+
+            <form class="auth-clean-form" method="post" action="<?= e(app_url('register.php')) ?>">
                 <?= csrf_field() ?>
-                <label>Nama lengkap<input name="name" required maxlength="120" autocomplete="name"
-                        value="<?= e($_POST['name'] ?? '') ?>"></label>
-                <label>Email<input type="email" name="email" required maxlength="190" autocomplete="email"
-                        value="<?= e($_POST['email'] ?? '') ?>"></label>
-                <label>Kata sandi<input type="password" name="password" required minlength="10"
-                        autocomplete="new-password"><small>Gunakan minimal 10 karakter.</small></label>
-                <button class="button button-dark" type="submit">Buat akun</button>
+                
+                <div class="form-group-clean">
+                    <label for="reg-name">Nama lengkap / Username</label>
+                    <input id="reg-name" type="text" name="name" placeholder="Masukkan nama lengkap" required autocomplete="name" value="<?= e($_POST['name'] ?? '') ?>">
+                </div>
+
+                <div class="form-group-clean">
+                    <label for="reg-email">Email</label>
+                    <input id="reg-email" type="email" name="email" placeholder="nama@email.com" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
+                </div>
+
+                <div class="form-group-clean">
+                    <label for="reg-password">Password</label>
+                    <input id="reg-password" type="password" name="password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+                </div>
+
+                <button class="button button-solid-black button-full" type="submit">Daftar Sekarang</button>
+                <a class="button button-outline-dark button-full" href="<?= e(app_url('login.php')) ?>">Sudah punya akun? Masuk</a>
             </form>
-            <p class="auth-switch">Sudah punya akun? <a href="login.php">Masuk</a></p>
-        </section>
+
+            <div class="auth-card-footer">
+                <a href="<?= e(app_url('index.php')) ?>" class="text-link-subtle">&larr; Kembali ke beranda toko</a>
+            </div>
+        </div>
     </div>
-</main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+</body>
+</html>
