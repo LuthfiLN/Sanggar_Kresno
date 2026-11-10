@@ -247,9 +247,9 @@ require __DIR__ . '/includes/header.php';
                     <span><?= indo_date($order['created_at']) ?></span>
                 </div>
                 <div class="proof-actions">
-                    <a class="button button-outline-dark button-full button-small" href="<?= e(app_url('chat.php')) ?>">
-                        Chat admin toko
-                    </a>
+                        <a class="button button-outline-dark button-full button-small" href="<?= e(app_url('chat.php?order=' . (int) $order['id'])) ?>">
+                            Chat admin toko
+                        </a>
                 </div>
             </section>
         </aside>

@@ -7,24 +7,48 @@ $user = require_login();
 $isAdmin = $user['role'] === 'admin';
 $pdo = db();
 
-$selectedCustomer = $isAdmin ? filter_var($_GET['customer'] ?? null, FILTER_VALIDATE_INT) : (int) $user['id'];
-$customers = [];
+$selectedOrder = $isAdmin ? filter_var($_GET['order'] ?? null, FILTER_VALIDATE_INT) : filter_var($_GET['order'] ?? null, FILTER_VALIDATE_INT);
+$orders = [];
+$order = null;
 $customer = null;
 
 if ($isAdmin) {
-    $customers = $pdo->query("SELECT u.id, u.name, u.email, MAX(m.created_at) AS latest_message, (SELECT o.id FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 1) AS latest_order_id FROM users u LEFT JOIN messages m ON m.customer_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY latest_message DESC, u.name ASC")->fetchAll();
+    $orders = $pdo->query("
+        SELECT o.id, o.user_id, o.total, o.shipping_fee, o.payment_status, o.status, o.delivery_date, o.created_at,
+               u.name AS customer_name, u.email AS customer_email,
+               (SELECT MAX(m.created_at) FROM messages m WHERE m.order_id = o.id) AS latest_message,
+               (SELECT COUNT(*) FROM messages m WHERE m.order_id = o.id) AS message_count
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        ORDER BY latest_message DESC, o.created_at DESC
+    ")->fetchAll();
 
-    if (!$selectedCustomer && $customers) {
-        $selectedCustomer = (int) $customers[0]['id'];
+    if (!$selectedOrder && $orders) {
+        $selectedOrder = (int) $orders[0]['id'];
     }
 
-    foreach ($customers as $c) {
-        if ((int) $c['id'] === $selectedCustomer) {
-            $customer = $c;
+    foreach ($orders as $o) {
+        if ((int) $o['id'] === $selectedOrder) {
+            $order = $o;
+            $customer = ['id' => (int) $o['user_id'], 'name' => $o['customer_name'], 'email' => $o['customer_email']];
             break;
         }
     }
 } else {
+    $orders = $pdo->prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC');
+    $orders->execute([$user['id']]);
+    $orders = $orders->fetchAll();
+
+    if (!$selectedOrder && $orders) {
+        $selectedOrder = (int) $orders[0]['id'];
+    }
+
+    foreach ($orders as $o) {
+        if ((int) $o['id'] === $selectedOrder) {
+            $order = $o;
+            break;
+        }
+    }
     $customer = $user;
 }
 
@@ -34,13 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'send_message') {
         $body = trim((string) ($_POST['body'] ?? ''));
-        $target = $isAdmin ? filter_var($_POST['customer_id'] ?? null, FILTER_VALIDATE_INT) : (int) $user['id'];
+        $targetOrder = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
 
-        if ($body !== '' && strlen($body) <= 2000 && $target) {
-            $insert = $pdo->prepare('INSERT INTO messages (customer_id, sender_role, body) VALUES (?, ?, ?)');
-            $insert->execute([$target, $isAdmin ? 'admin' : 'customer', $body]);
+        if ($body !== '' && strlen($body) <= 2000 && $targetOrder) {
+            $targetOrderOwner = null;
+            $ownerCheck = $pdo->prepare('SELECT user_id FROM orders WHERE id = ?');
+            $ownerCheck->execute([$targetOrder]);
+            $row = $ownerCheck->fetch();
+            if ($row) {
+                $targetOrderOwner = (int) $row['user_id'];
+            }
+
+            if ($targetOrderOwner !== null) {
+                $insert = $pdo->prepare('INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, ?, ?)');
+                $insert->execute([$targetOrder, $targetOrderOwner, $isAdmin ? 'admin' : 'customer', $body]);
+            }
         }
-        header('Location: ' . app_url('chat.php' . ($isAdmin ? '?customer=' . $target : '')));
+        header('Location: ' . app_url('chat.php?order=' . $targetOrder));
         exit;
     }
 
@@ -52,13 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $pdo->prepare('UPDATE orders SET shipping_fee = ? WHERE id = ?');
             $update->execute([$shippingFee, $targetOrderId]);
 
+            $orderRow = $pdo->prepare('SELECT user_id FROM orders WHERE id = ?');
+            $orderRow->execute([$targetOrderId]);
+            $ord = $orderRow->fetch();
+            $custId = $ord ? (int) $ord['user_id'] : 0;
+
             $notifMsg = 'Ongkir telah disepakati sebesar ' . rupiah($shippingFee) . ' dan diterapkan ke pesanan #' . order_code($targetOrderId) . '.';
-            $insertMsg = $pdo->prepare("INSERT INTO messages (customer_id, sender_role, body) VALUES (?, 'admin', ?)");
-            $insertMsg->execute([$selectedCustomer, $notifMsg]);
+            $insertMsg = $pdo->prepare("INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, 'admin', ?)");
+            $insertMsg->execute([$targetOrderId, $custId, $notifMsg]);
 
             set_flash('success', 'Ongkir berhasil diterapkan ke pesanan.');
         }
-        header('Location: ' . app_url('chat.php?customer=' . $selectedCustomer));
+        header('Location: ' . app_url('chat.php?order=' . $targetOrderId));
         exit;
     }
 
@@ -70,36 +109,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $pdo->prepare('UPDATE orders SET delivery_date = ? WHERE id = ?');
             $update->execute([$newDate, $targetOrderId]);
 
+            $orderRow = $pdo->prepare('SELECT user_id FROM orders WHERE id = ?');
+            $orderRow->execute([$targetOrderId]);
+            $ord = $orderRow->fetch();
+            $custId = $ord ? (int) $ord['user_id'] : 0;
+
             $notifMsg = 'Jadwal pengiriman pesanan #' . order_code($targetOrderId) . ' telah disesuaikan menjadi: ' . indo_date($newDate) . ' (13.00-16.00 WIB) sesuai kesepakatan bersama.';
-            $insertMsg = $pdo->prepare("INSERT INTO messages (customer_id, sender_role, body) VALUES (?, 'admin', ?)");
-            $insertMsg->execute([$selectedCustomer, $notifMsg]);
+            $insertMsg = $pdo->prepare("INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, 'admin', ?)");
+            $insertMsg->execute([$targetOrderId, $custId, $notifMsg]);
 
             set_flash('success', 'Jadwal pengiriman pesanan #' . order_code($targetOrderId) . ' berhasil disesuaikan.');
         }
-        header('Location: ' . app_url('chat.php?customer=' . $selectedCustomer));
+        header('Location: ' . app_url('chat.php?order=' . $targetOrderId));
         exit;
     }
 }
 
 $messages = [];
-if ($selectedCustomer) {
-    $q = $pdo->prepare('SELECT m.*, u.name AS customer_name FROM messages m JOIN users u ON u.id = m.customer_id WHERE m.customer_id = ? ORDER BY m.id ASC LIMIT 300');
-    $q->execute([$selectedCustomer]);
+if ($selectedOrder) {
+    $q = $pdo->prepare('SELECT m.*, u.name AS customer_name FROM messages m JOIN users u ON u.id = m.customer_id WHERE m.order_id = ? ORDER BY m.id ASC LIMIT 300');
+    $q->execute([$selectedOrder]);
     $messages = $q->fetchAll();
 }
 
-$latestOrder = null;
+$latestOrder = $order;
 $orderItems = [];
-if ($selectedCustomer) {
-    $orderQ = $pdo->prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
-    $orderQ->execute([$selectedCustomer]);
-    $latestOrder = $orderQ->fetch();
-
-    if ($latestOrder) {
-        $itemsQ = $pdo->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ?');
-        $itemsQ->execute([$latestOrder['id']]);
-        $orderItems = $itemsQ->fetchAll();
-    }
+if ($selectedOrder) {
+    $itemsQ = $pdo->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ?');
+    $itemsQ->execute([$selectedOrder]);
+    $orderItems = $itemsQ->fetchAll();
 }
 
 $pageTitle = $isAdmin ? 'Inbox Negosiasi' : 'Chat Admin';
@@ -116,32 +154,34 @@ if ($isAdmin) {
     <div class="page-heading">
         <p class="eyebrow"><?= $isAdmin ? 'RUANG ADMIN / NEGOSIASI' : 'CHAT PREORDER / MEDAN' ?></p>
         <h1><?= $isAdmin ? 'Inbox negosiasi' : 'Tanya Sanggar Tresno' ?></h1>
-        <p><?= $isAdmin ? 'Sepakati ongkir dengan pelanggan dan sesuaikan jadwal pengiriman pesanan.' : 'Diskusikan pilihan kue, penentuan ongkir Medan, atau penyesuaian jadwal pengiriman.' ?>
-        </p>
+        <p><?= $isAdmin ? 'Sepakati ongkir dan jadwal pengiriman per pesanan.' : 'Diskusikan ongkir dan jadwal pengiriman per pesanan.' ?></p>
     </div>
 
     <div class="chat-main-grid-layout <?= $isAdmin ? 'admin-chat-mode' : 'user-chat-mode' ?>">
         <?php if ($isAdmin): ?>
         <aside class="chat-thread-sidebar panel">
             <div class="thread-search-box">
-                <input type="text" id="filterCustomerInput" placeholder="Cari pelanggan..." onkeyup="filterCustomers()">
+                <input type="text" id="filterOrderInput" placeholder="Cari pesanan / pelanggan..." onkeyup="filterOrders()">
             </div>
-            <div class="thread-list-scroll" id="customerListScroll">
-                <?php if (!$customers): ?>
-                <p class="empty-hint-text">Belum ada pelanggan terdaftar.</p>
+            <div class="thread-list-scroll" id="orderListScroll">
+                <?php if (!$orders): ?>
+                <p class="empty-hint-text">Belum ada pesanan.</p>
                 <?php else: ?>
-                <?php foreach ($customers as $cItem): ?>
-                <?php $isAct = ((int) $cItem['id'] === $selectedCustomer); ?>
+                <?php foreach ($orders as $oItem): ?>
+                <?php $isAct = ((int) $oItem['id'] === $selectedOrder); ?>
                 <a class="thread-user-item <?= $isAct ? 'is-active' : '' ?>"
-                    href="<?= e(app_url('chat.php?customer=' . (int) $cItem['id'])) ?>">
-                    <div class="thread-user-avatar"><?= strtoupper(substr($cItem['name'], 0, 1)) ?></div>
+                    href="<?= e(app_url('chat.php?order=' . (int) $oItem['id'])) ?>">
+                    <div class="thread-user-avatar"><?= strtoupper(substr($oItem['customer_name'], 0, 1)) ?></div>
                     <div class="thread-user-text">
-                        <strong class="user-item-name"><?= e($cItem['name']) ?></strong>
-                        <small><?= e($cItem['email']) ?></small>
-                        <?php if ($cItem['latest_message']): ?>
-                        <span class="thread-time"><?= date('d M, H:i', strtotime($cItem['latest_message'])) ?></span>
+                        <strong class="user-item-name">#<?= e(order_code($oItem)) ?></strong>
+                        <small><?= e($oItem['customer_name']) ?> &bull; <?= e($oItem['customer_email']) ?></small>
+                        <?php if ($oItem['latest_message']): ?>
+                        <span class="thread-time"><?= date('d M, H:i', strtotime($oItem['latest_message'])) ?></span>
                         <?php endif; ?>
                     </div>
+                    <span class="thread-order-status status-badge-clean status-<?= e($oItem['status']) ?>">
+                        <?= e(order_status_label($oItem['status'])) ?>
+                    </span>
                 </a>
                 <?php endforeach; ?>
                 <?php endif; ?>
@@ -152,7 +192,11 @@ if ($isAdmin) {
         <section class="chat-conversation-panel panel">
             <header class="chat-room-header">
                 <div>
-                    <h2><?= $isAdmin ? e($customer['name'] ?? 'Pelanggan') : 'Admin Sanggar Tresno' ?></h2>
+                    <?php if ($isAdmin): ?>
+                    <h2><?= e($customer['name'] ?? 'Pelanggan') ?></h2>
+                    <?php else: ?>
+                    <h2>Admin Sanggar Tresno</h2>
+                    <?php endif; ?>
                     <small>Pre-order Kue Lebaran Rumahan Medan</small>
                 </div>
                 <?php if ($latestOrder): ?>
@@ -214,9 +258,7 @@ if ($isAdmin) {
             <form class="chat-compose-form" method="post" action="<?= e(app_url('chat.php')) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="send_message">
-                <?php if ($isAdmin): ?>
-                <input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer ?>">
-                <?php endif; ?>
+                <input type="hidden" name="order_id" value="<?= (int) $selectedOrder ?>">
                 <textarea name="body" placeholder="Tulis pesan negosiasi atau pertanyaan..." required maxlength="2000"
                     rows="2" aria-label="Tulis pesan"></textarea>
                 <button class="button button-solid-black" type="submit">Kirim</button>
@@ -293,12 +335,12 @@ if ($isAdmin) {
 </main>
 
 <script>
-function filterCustomers() {
-    const query = document.getElementById('filterCustomerInput').value.toLowerCase();
+function filterOrders() {
+    const query = document.getElementById('filterOrderInput').value.toLowerCase();
     const items = document.querySelectorAll('.thread-user-item');
     items.forEach(item => {
-        const name = item.querySelector('.user-item-name').innerText.toLowerCase();
-        item.style.display = name.includes(query) ? 'flex' : 'none';
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(query) ? 'flex' : 'none';
     });
 }
 

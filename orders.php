@@ -65,7 +65,7 @@ require __DIR__ . '/includes/header.php';
                                     Bayar DP
                                 </a>
                             <?php endif; ?>
-                            <a class="text-link-primary" href="<?= e(app_url('chat.php')) ?>">Chat admin</a>
+                            <a class="text-link-primary" href="<?= e(app_url('chat.php?order=' . (int) $order['id'])) ?>">Chat admin</a>
                         </div>
                     </div>
                 </article>
