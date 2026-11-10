@@ -13,6 +13,33 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+function load_env(string $path): void
+{
+    if (!is_file($path)) {
+        return;
+    }
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        if (strpos($line, '=') === false) {
+            continue;
+        }
+        [$key, $value] = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value);
+        if ($value !== '' && !array_key_exists($key, $_ENV) && !array_key_exists($key, $_SERVER)) {
+            putenv($key . '=' . $value);
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+}
+
+load_env(__DIR__ . '/.env');
+
 const DB_HOST = '127.0.0.1';
 const DB_NAME = 'sanggar_tresno';
 const DB_USER = 'root';
@@ -40,10 +67,14 @@ function db(): PDO
 {
     static $connection;
     if (!$connection) {
+        $host = getenv('DB_HOST') ?: DB_HOST;
+        $name = getenv('DB_NAME') ?: DB_NAME;
+        $user = getenv('DB_USER') ?: DB_USER;
+        $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : DB_PASS;
         $connection = new PDO(
-            'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-            DB_USER,
-            DB_PASS,
+            'mysql:host=' . $host . ';dbname=' . $name . ';charset=utf8mb4',
+            $user,
+            $pass,
             [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
