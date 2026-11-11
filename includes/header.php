@@ -38,10 +38,6 @@ $flashMessage = take_flash();
             <?php if ($viewer && $viewer['role'] === 'admin'): ?>
                 <a href="<?= e(app_url('index.php')) ?>" class="<?= $currentNav === 'store' ? 'is-active' : '' ?>">Lihat Toko</a>
                 <a href="<?= e(app_url('admin/index.php')) ?>" class="admin-badge-link">&#9881; Dashboard Admin</a>
-                <form method="post" action="<?= e(app_url('logout.php')) ?>" class="nav-logout">
-                    <?= csrf_field() ?>
-                    <button type="submit">Keluar</button>
-                </form>
             <?php else: ?>
                 <a href="<?= e(app_url('index.php#koleksi')) ?>" class="<?= $currentNav === 'menu' ? 'is-active' : '' ?>">Menu pre-order</a>
                 <a href="<?= e(app_url('index.php#cara-pesan')) ?>" class="<?= $currentNav === 'how' ? 'is-active' : '' ?>">Cara pesan</a>

@@ -29,9 +29,16 @@ $adminNavigation = [
 </head>
 
 <body class="admin-body">
+    <div class="admin-mobile-overlay" id="adminMobileOverlay"></div>
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-sidebar-top">
+                <button class="admin-mobile-close" id="adminMobileClose" aria-label="Tutup menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
                 <a class="brand admin-brand" href="<?= e(app_url('admin/index.php')) ?>">
                     <span class="brand-mark">sr.</span>
                     <span class="brand-text">
@@ -73,12 +80,22 @@ $adminNavigation = [
         <div class="admin-workspace">
             <header class="admin-topbar">
                 <div class="admin-topbar-breadcrumb">
+                    <button class="admin-mobile-menu-toggle" id="adminMobileMenuToggle" aria-label="Buka menu admin">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
                     <span>Ruang admin</span>
                     <span class="sep">/</span>
                     <strong class="page-name"><?= e($adminPageTitle) ?></strong>
                 </div>
 
                 <div class="admin-topbar-actions">
+                    <a class="button button-outline-dark button-small" href="<?= e(app_url('index.php')) ?>">
+                        Lihat Toko
+                    </a>
                     <form method="post" action="<?= e(app_url('logout.php')) ?>" class="admin-logout-form">
                         <?= csrf_field() ?>
                         <button type="submit" class="button button-outline-dark button-small"
@@ -88,6 +105,30 @@ $adminNavigation = [
                     </form>
                 </div>
             </header>
+
+            <script>
+            (function() {
+                var toggle = document.getElementById('adminMobileMenuToggle');
+                var close = document.getElementById('adminMobileClose');
+                var overlay = document.getElementById('adminMobileOverlay');
+                var body = document.body;
+                var sidebar = document.querySelector('.admin-sidebar');
+                if (!toggle || !overlay) return;
+                function openMenu() {
+                    body.classList.add('admin-menu-open');
+                    if (sidebar) sidebar.classList.add('is-open');
+                    overlay.classList.add('is-open');
+                }
+                function closeMenu() {
+                    body.classList.remove('admin-menu-open');
+                    if (sidebar) sidebar.classList.remove('is-open');
+                    overlay.classList.remove('is-open');
+                }
+                toggle.addEventListener('click', openMenu);
+                close && close.addEventListener('click', closeMenu);
+                overlay.addEventListener('click', closeMenu);
+            })();
+            </script>
 
             <?php if ($flashMessage = take_flash()): ?>
             <div class="flash-wrap">

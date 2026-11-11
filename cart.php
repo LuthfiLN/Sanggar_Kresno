@@ -148,7 +148,7 @@ require __DIR__ . '/includes/header.php';
                     <div class="delivery-details-text">
                         <strong><?= $viewer ? e($viewer['name']) : 'Pelanggan' ?></strong>
                         <p>Metode:
-                            <strong><?= $fulfillment === 'pickup' ? 'Ambil sendiri di Toko (Medan)' : 'Antar ke alamat (Kota Medan)' ?></strong>
+                            <strong><?= $fulfillment === 'pickup' ? 'Ambil sendiri di Toko (Medan)' : 'Antar ke alamat' ?></strong>
                         </p>
                         <small class="delivery-schedule-tag">&#128197; Jadwal pre-order: <?= e($scheduledDate) ?> &bull;
                             13.00&ndash;16.00 WIB</small>
@@ -177,7 +177,7 @@ require __DIR__ . '/includes/header.php';
                     <?php endforeach; ?>
                     <?php else: ?>
                     <p class="chat-empty-hint">Belum ada obrolan ongkir. Klik tombol di bawah untuk menyepakati ongkos
-                        kirim area Medan dengan admin.</p>
+                        kirim dengan admin.</p>
                     <?php endif; ?>
                 </div>
 

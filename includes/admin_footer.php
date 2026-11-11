@@ -23,6 +23,16 @@
                     class="<?= ($adminActive ?? '') === 'reports' ? 'is-active' : '' ?>">
                     <small>Laporan</small>
                 </a>
+                <a href="<?= e(app_url('index.php')) ?>"
+                    class="<?= ($adminActive ?? '') === 'store' ? 'is-active' : '' ?>">
+                    <small>Lihat Toko</small>
+                </a>
+                <form method="post" action="<?= e(app_url('logout.php')) ?>" style="margin:0;">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="admin-mobile-nav-item" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;background:none;border:none;cursor:pointer;color:inherit;font:inherit;">
+                        <small style="color:inherit;">Keluar</small>
+                    </button>
+                </form>
             </nav>
             </body>
 

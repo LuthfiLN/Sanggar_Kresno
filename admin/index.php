@@ -78,7 +78,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         <div class="stat-card-white">
             <span class="stat-label">Perlu balasan</span>
             <h2 class="stat-number"><?= $unreadChatCount ?></h2>
-            <small class="stat-meta">Negosiasi ongkir &bull; Medan</small>
+            <small class="stat-meta">Negosiasi ongkir</small>
         </div>
 
         <div class="stat-card-white">
@@ -112,33 +112,33 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                         </thead>
                         <tbody>
                             <?php if (!$orders): ?>
-                            <tr>
-                                <td colspan="5" class="empty-table-cell">Belum ada pesanan untuk jadwal batch ini.</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="5" class="empty-table-cell">Belum ada pesanan untuk jadwal batch ini.</td>
+                                </tr>
                             <?php endif; ?>
                             <?php foreach ($orders as $o): ?>
-                            <?php $isPaid = in_array($o['payment_status'], ['dp_paid', 'paid'], true); ?>
-                            <tr>
-                                <td>
-                                    <strong>#<?= e(order_code($o)) ?></strong>
-                                </td>
-                                <td>
-                                    <strong><?= e($o['customer_name']) ?></strong>
-                                    <small class="cell-sub-item"><?= e($o['item_summary'] ?? '') ?></small>
-                                </td>
-                                <td>
-                                    <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
-                                        <?= $isPaid ? 'DP Paid' : 'Pending' ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <strong><?= rupiah((float) $o['total'] + (int) ($o['shipping_fee'] ?? 0)) ?></strong>
-                                </td>
-                                <td>
-                                    <a class="button button-outline-dark button-small"
-                                        href="kelola_orders.php?order=<?= (int) $o['id'] ?>">Detail</a>
-                                </td>
-                            </tr>
+                                <?php $isPaid = in_array($o['payment_status'], ['dp_paid', 'paid'], true); ?>
+                                <tr>
+                                    <td>
+                                        <strong>#<?= e(order_code($o)) ?></strong>
+                                    </td>
+                                    <td>
+                                        <strong><?= e($o['customer_name']) ?></strong>
+                                        <small class="cell-sub-item"><?= e($o['item_summary'] ?? '') ?></small>
+                                    </td>
+                                    <td>
+                                        <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
+                                            <?= $isPaid ? 'DP Paid' : 'Pending' ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong><?= rupiah((float) $o['total'] + (int) ($o['shipping_fee'] ?? 0)) ?></strong>
+                                    </td>
+                                    <td>
+                                        <a class="button button-outline-dark button-small"
+                                            href="kelola_orders.php?order=<?= (int) $o['id'] ?>">Detail</a>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -159,7 +159,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                         <span class="chat-dot">&#128172;</span>
                         <div>
                             <strong>Negosiasi ongkir: <?= $unreadChatCount ?> percakapan menunggu</strong>
-                            <p>Tanggapi pertanyaan ongkir area Medan dan sepakati jadwal pengiriman.</p>
+                            <p>Tanggapi pertanyaan ongkir dan sepakati jadwal pengiriman.</p>
                         </div>
                         <a class="button button-solid-black button-small" href="<?= e(app_url('chat.php')) ?>">Buka
                             inbox negosiasi</a>
@@ -175,13 +175,13 @@ require dirname(__DIR__) . '/includes/admin_header.php';
 
                 <div class="production-summary-list">
                     <?php if (!$productionItems): ?>
-                    <p class="empty-hint-text">Belum ada pesanan dengan DP terverifikasi untuk batch ini.</p>
+                        <p class="empty-hint-text">Belum ada pesanan dengan DP terverifikasi untuk batch ini.</p>
                     <?php endif; ?>
                     <?php foreach ($productionItems as $pItem): ?>
-                    <div class="production-summary-row">
-                        <span class="prod-name"><?= e($pItem['name']) ?></span>
-                        <strong class="prod-qty"><?= (int) $pItem['quantity'] ?> toples</strong>
-                    </div>
+                        <div class="production-summary-row">
+                            <span class="prod-name"><?= e($pItem['name']) ?></span>
+                            <strong class="prod-qty"><?= (int) $pItem['quantity'] ?> toples</strong>
+                        </div>
                     <?php endforeach; ?>
                 </div>
 
@@ -199,7 +199,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                 <p class="schedule-time-desc">
                     10.00: Batas pelunasan 100%<br>
                     10.00&ndash;12.00: Ambil sendiri di toko<br>
-                    13.00&ndash;16.00: Pengiriman kurir area Medan
+                    13.00&ndash;16.00: Pengiriman kurir
                 </p>
                 <a class="button button-solid-black button-full button-small"
                     href="kelola_orders.php?date=<?= e($batch) ?>">

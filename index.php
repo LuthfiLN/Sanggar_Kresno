@@ -66,7 +66,7 @@ require __DIR__ . '/includes/header.php';
 <main class="page-shell">
     <div class="catalog-header-wrap">
         <div class="catalog-header-left">
-            <p class="eyebrow">DAPUR SELA RASA / MEDAN</p>
+            <p class="eyebrow">Sanggar Tresno / MEDAN</p>
             <h1 class="catalog-main-title">Daftar produk</h1>
             <p class="catalog-subtitle">Pilih produk dan jadwal pre-order.</p>
         </div>
@@ -139,7 +139,7 @@ require __DIR__ . '/includes/header.php';
                             href="<?= e(app_url('product.php?id=' . (int) $product['id'])) ?>"><?= e($product['name']) ?></a>
                     </h2>
                     <p class="product-card-desc">
-                        <?= e($product['description'] ?: 'Dibuat segar sesuai pesanan dengan resep rumahan khas Medan.') ?>
+                        <?= e($product['description'] ?: 'Dibuat segar sesuai pesanan dengan resep rumahan.') ?>
                     </p>
                     <p class="product-card-unit"><?= e($product['category'] ?? 'toples') ?></p>
                     <div class="product-card-foot">
@@ -167,7 +167,7 @@ require __DIR__ . '/includes/header.php';
             <span class="step-card-num">02</span>
             <div class="step-card-body">
                 <h3>Sepakati ongkir</h3>
-                <p>Khusus Medan, ngobrol dulu dengan admin melalui fitur chat internal.</p>
+                <p>ngobrol dulu dengan admin melalui fitur chat internal.</p>
             </div>
         </div>
         <div class="step-card-clean">

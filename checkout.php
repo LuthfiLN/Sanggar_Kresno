@@ -125,11 +125,9 @@ require __DIR__ . '/includes/header.php';
                         value="<?= e($_POST['phone'] ?? '') ?>"></label>
             </div>
             <label>Tanggal pengiriman
-                <input type="date" name="delivery_date" id="delivery_date_input"
-                    min="<?= e($minDateStr) ?>" required
+                <input type="date" name="delivery_date" id="delivery_date_input" min="<?= e($minDateStr) ?>" required
                     value="<?= e($_POST['delivery_date'] ?? $defaultDeliveryDate) ?>"
-                    onchange="validateCheckoutDate(this)"
-                    oninput="validateCheckoutDate(this)">
+                    onchange="validateCheckoutDate(this)" oninput="validateCheckoutDate(this)">
                 <small>Pemesanan minimal 3 hari sebelum pengiriman (tidak bisa besok atau lusa). Jadwal dapat
                     disesuaikan kembali oleh admin melalui chat jika antrean dapur sedang penuh.</small>
             </label>
@@ -176,23 +174,26 @@ require __DIR__ . '/includes/header.php';
 </main>
 
 <script>
-const minDeliveryDateStr = "<?= e($minDateStr) ?>";
-function validateCheckoutDate(input) {
-    if (!input.value || input.value < minDeliveryDateStr) {
-        alert("Tanggal pre-order tidak bisa dipilih untuk hari ini, besok, atau lusa. Pemesanan minimal 3 hari dari sekarang (" + minDeliveryDateStr + ").\n\nJadwal pengiriman dapat disesuaikan kembali oleh admin melalui chat jika antrean dapur padat.");
-        input.value = minDeliveryDateStr;
-    }
-}
+    const minDeliveryDateStr = "<?= e($minDateStr) ?>";
 
-document.querySelector('.checkout-layout form')?.addEventListener('submit', function(e) {
-    const input = document.getElementById('delivery_date_input');
-    if (input && (!input.value || input.value < minDeliveryDateStr)) {
-        e.preventDefault();
-        alert("Tanggal pre-order minimal 3 hari setelah dipesan.");
-        input.value = minDeliveryDateStr;
-        input.focus();
+    function validateCheckoutDate(input) {
+        if (!input.value || input.value < minDeliveryDateStr) {
+            alert("Tanggal pre-order tidak bisa dipilih untuk hari ini, besok, atau lusa. Pemesanan minimal 3 hari dari sekarang (" +
+                minDeliveryDateStr +
+                ").\n\nJadwal pengiriman dapat disesuaikan kembali oleh admin melalui chat jika antrean dapur padat.");
+            input.value = minDeliveryDateStr;
+        }
     }
-});
+
+    document.querySelector('.checkout-layout form')?.addEventListener('submit', function(e) {
+        const input = document.getElementById('delivery_date_input');
+        if (input && (!input.value || input.value < minDeliveryDateStr)) {
+            e.preventDefault();
+            alert("Tanggal pre-order minimal 3 hari setelah dipesan.");
+            input.value = minDeliveryDateStr;
+            input.focus();
+        }
+    });
 </script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

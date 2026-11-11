@@ -154,14 +154,16 @@ if ($isAdmin) {
     <div class="page-heading">
         <p class="eyebrow"><?= $isAdmin ? 'RUANG ADMIN / NEGOSIASI' : 'CHAT PREORDER / MEDAN' ?></p>
         <h1><?= $isAdmin ? 'Inbox negosiasi' : 'Tanya Sanggar Tresno' ?></h1>
-        <p><?= $isAdmin ? 'Sepakati ongkir dan jadwal pengiriman per pesanan.' : 'Diskusikan ongkir dan jadwal pengiriman per pesanan.' ?></p>
+        <p><?= $isAdmin ? 'Sepakati ongkir dan jadwal pengiriman per pesanan.' : 'Diskusikan ongkir dan jadwal pengiriman per pesanan.' ?>
+        </p>
     </div>
 
     <div class="chat-main-grid-layout <?= $isAdmin ? 'admin-chat-mode' : 'user-chat-mode' ?>">
         <?php if ($isAdmin): ?>
         <aside class="chat-thread-sidebar panel">
             <div class="thread-search-box">
-                <input type="text" id="filterOrderInput" placeholder="Cari pesanan / pelanggan..." onkeyup="filterOrders()">
+                <input type="text" id="filterOrderInput" placeholder="Cari pesanan / pelanggan..."
+                    onkeyup="filterOrders()">
             </div>
             <div class="thread-list-scroll" id="orderListScroll">
                 <?php if (!$orders): ?>
@@ -197,7 +199,7 @@ if ($isAdmin) {
                     <?php else: ?>
                     <h2>Admin Sanggar Tresno</h2>
                     <?php endif; ?>
-                    <small>Pre-order Kue Lebaran Rumahan Medan</small>
+                    <small>Pre-order Kue Lebaran Rumahan</small>
                 </div>
                 <?php if ($latestOrder): ?>
                 <span class="chat-order-pill">Pesanan #<?= e(order_code($latestOrder)) ?></span>

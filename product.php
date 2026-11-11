@@ -77,7 +77,7 @@ require __DIR__ . '/includes/header.php';
                 PRE-ORDER &bull; <?= e(strtoupper($product['category'] ?: 'KUE KERING')) ?>
             </div>
             <h1 class="product-title-large"><?= e($product['name']) ?></h1>
-            <p class="product-subtitle-text">Detail produk dan opsi pemesanan pre-order Medan.</p>
+            <p class="product-subtitle-text">Detail produk dan opsi pemesanan pre-order.</p>
 
             <div class="product-price-tag">
                 <span class="price-val" id="singlePriceDisplay"><?= rupiah($product['price']) ?></span>
@@ -104,7 +104,7 @@ require __DIR__ . '/includes/header.php';
                     <label for="fulfillment">Metode penerimaan</label>
                     <select id="fulfillment" name="fulfillment">
                         <option value="delivery" <?= $defaultFulfillment === 'delivery' ? 'selected' : '' ?>>Antar ke
-                            alamat &bull; Medan</option>
+                            alamat</option>
                         <option value="pickup" <?= $defaultFulfillment === 'pickup' ? 'selected' : '' ?>>Ambil sendiri
                             di Toko</option>
                     </select>
@@ -163,50 +163,50 @@ require __DIR__ . '/includes/header.php';
 </main>
 
 <script>
-const basePrice = <?= (float) $product['price'] ?>;
-const minDate = "<?= e($minDateStr) ?>";
-const maxStock = <?= max(1, (int) $product['stock']) ?>;
+    const basePrice = <?= (float) $product['price'] ?>;
+    const minDate = "<?= e($minDateStr) ?>";
+    const maxStock = <?= max(1, (int) $product['stock']) ?>;
 
-function stepQty(delta) {
-    const input = document.getElementById('product-quantity');
-    let current = parseInt(input.value) || 1;
-    let next = current + delta;
-    if (next < 1) next = 1;
-    if (next > maxStock) next = maxStock;
-    input.value = next;
-    updateTotalBtn(next);
-}
-
-function updateTotalBtn(qty) {
-    const total = basePrice * qty;
-    const formatted = 'Rp ' + total.toLocaleString('id-ID');
-    document.getElementById('totalPriceBtnText').innerText = formatted;
-}
-
-function validateDate(input) {
-    if (!input.value || input.value < minDate) {
-        alert('Tanggal pre-order tidak bisa dipilih untuk hari ini, besok, atau lusa. Pemesanan minimal 3 hari dari sekarang (paling cepat ' +
-            minDate +
-            ').\n\nJadwal pengiriman dapat disesuaikan kembali oleh admin melalui chat jika antrean dapur padat.');
-        input.value = minDate;
+    function stepQty(delta) {
+        const input = document.getElementById('product-quantity');
+        let current = parseInt(input.value) || 1;
+        let next = current + delta;
+        if (next < 1) next = 1;
+        if (next > maxStock) next = maxStock;
+        input.value = next;
+        updateTotalBtn(next);
     }
-}
 
-document.querySelector('.product-order-clean-form')?.addEventListener('submit', function(e) {
-    const input = document.getElementById('delivery_date');
-    if (input && (!input.value || input.value < minDate)) {
-        e.preventDefault();
-        alert('Tanggal pre-order minimal 3 hari setelah dipesan.');
-        input.value = minDate;
-        input.focus();
+    function updateTotalBtn(qty) {
+        const total = basePrice * qty;
+        const formatted = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('totalPriceBtnText').innerText = formatted;
     }
-});
 
-function changeThumb(el, src) {
-    document.getElementById('mainProductImg').src = src;
-    document.querySelectorAll('.thumb-box').forEach(b => b.classList.remove('is-active'));
-    el.classList.add('is-active');
-}
+    function validateDate(input) {
+        if (!input.value || input.value < minDate) {
+            alert('Tanggal pre-order tidak bisa dipilih untuk hari ini, besok, atau lusa. Pemesanan minimal 3 hari dari sekarang (paling cepat ' +
+                minDate +
+                ').\n\nJadwal pengiriman dapat disesuaikan kembali oleh admin melalui chat jika antrean dapur padat.');
+            input.value = minDate;
+        }
+    }
+
+    document.querySelector('.product-order-clean-form')?.addEventListener('submit', function(e) {
+        const input = document.getElementById('delivery_date');
+        if (input && (!input.value || input.value < minDate)) {
+            e.preventDefault();
+            alert('Tanggal pre-order minimal 3 hari setelah dipesan.');
+            input.value = minDate;
+            input.focus();
+        }
+    });
+
+    function changeThumb(el, src) {
+        document.getElementById('mainProductImg').src = src;
+        document.querySelectorAll('.thumb-box').forEach(b => b.classList.remove('is-active'));
+        el.classList.add('is-active');
+    }
 </script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
