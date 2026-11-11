@@ -21,13 +21,13 @@ $currentNav = $currentNav ?? '';
 </footer>
 
 <nav class="mobile-bottom-nav" aria-label="Navigasi Bawah Mobile">
-    <a href="<?= e(app_url('index.php')) ?>" class="mobile-nav-item <?= $currentNav === 'menu' ? 'is-active' : '' ?>">
+    <a href="<?= e(app_url('index.php')) ?>" class="mobile-nav-item <?= $currentNav === 'menu' || $currentNav === 'store' ? 'is-active' : '' ?>">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
-        <span>Menu</span>
+        <span>Katalog</span>
     </a>
     <a href="<?= e(app_url('cart.php')) ?>" class="mobile-nav-item <?= $currentNav === 'cart' ? 'is-active' : '' ?>">
         <span class="mobile-nav-icon-wrap">
@@ -43,6 +43,25 @@ $currentNav = $currentNav ?? '';
         </span>
         <span>Keranjang</span>
     </a>
+    <?php if ($viewer && $viewer['role'] === 'admin'): ?>
+    <a href="<?= e(app_url('admin/index.php')) ?>" class="mobile-nav-item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Dashboard</span>
+    </a>
+    <a href="<?= e(app_url('chat.php')) ?>" class="mobile-nav-item <?= $currentNav === 'chat' ? 'is-active' : '' ?>">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>Chat</span>
+    </a>
+    <?php else: ?>
     <a href="<?= e(app_url('orders.php')) ?>"
         class="mobile-nav-item <?= $currentNav === 'orders' ? 'is-active' : '' ?>">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -60,6 +79,7 @@ $currentNav = $currentNav ?? '';
         </svg>
         <span>Chat</span>
     </a>
+    <?php endif; ?>
 </nav>
 
 </body>
