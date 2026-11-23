@@ -100,7 +100,7 @@ if ($cartIds) {
 }
 
 $pageTitle = 'Pemesanan';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell checkout-page">
     <nav class="checkout-steps" aria-label="Tahap pemesanan">
@@ -196,4 +196,4 @@ require __DIR__ . '/includes/header.php';
     });
 </script>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

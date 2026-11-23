@@ -45,7 +45,7 @@ $reportOrders = $reportStmt->fetchAll();
 
 $pageTitle = 'Laporan Penjualan';
 $adminActive = 'reports';
-require dirname(__DIR__) . '/includes/admin_header.php';
+require dirname(__DIR__) . '/../app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-orders-header">
@@ -157,4 +157,4 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         </div>
     </section>
 </main>
-<?php require dirname(__DIR__) . '/includes/admin_footer.php'; ?>
+<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>

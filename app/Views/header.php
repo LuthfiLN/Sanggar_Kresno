@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__DIR__) . '/config.php';
+require_once dirname(__DIR__, 2) . '/config.php';
 
 $pageTitle = $pageTitle ?? 'Aneka kue rumahan';
 $currentNav = $currentNav ?? '';

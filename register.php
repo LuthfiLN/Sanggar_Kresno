@@ -20,10 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Lengkapi nama, email yang valid, dan kata sandi minimal 6 karakter.';
     } else {
         try {
-            $query = db()->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'customer')");
-            $query->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
+            $_SESSION['user_id'] = create_customer($name, $email, password_hash($password, PASSWORD_DEFAULT));
             session_regenerate_id(true);
-            $_SESSION['user_id'] = (int) db()->lastInsertId();
             set_flash('success', 'Akun berhasil dibuat. Selamat datang di Sanggar Tresno.');
             header('Location: ' . app_url('index.php'));
             exit;

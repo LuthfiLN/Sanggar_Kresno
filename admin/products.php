@@ -90,7 +90,7 @@ if ($editId) {
 
 $pageTitle = 'Kelola Produk & Pre-Order';
 $adminActive = 'products';
-require dirname(__DIR__) . '/includes/admin_header.php';
+require dirname(__DIR__) . '/../app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-products-header">
@@ -301,4 +301,4 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         </div>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/includes/admin_footer.php'; ?>
+<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>

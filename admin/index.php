@@ -41,7 +41,7 @@ $productionItems = $productionQuery->fetchAll();
 
 $pageTitle = 'Ringkasan Batch';
 $adminActive = 'overview';
-require dirname(__DIR__) . '/includes/admin_header.php';
+require dirname(__DIR__) . '/../app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="admin-dashboard-hero">
@@ -209,4 +209,4 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         </aside>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/includes/admin_footer.php'; ?>
+<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>

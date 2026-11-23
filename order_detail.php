@@ -11,10 +11,7 @@ if (!$orderId) {
     exit;
 }
 
-$pdo = db();
-$orderQuery = $pdo->prepare('SELECT * FROM orders WHERE id = ? AND (user_id = ? OR ? = "admin")');
-$orderQuery->execute([$orderId, $user['id'], $user['role']]);
-$order = $orderQuery->fetch();
+$order = find_order_for_viewer((int) $orderId, (int) $user['id'], (string) $user['role']);
 
 if (!$order) {
     set_flash('error', 'Pesanan tidak ditemukan.');
@@ -22,9 +19,7 @@ if (!$order) {
     exit;
 }
 
-$itemsQuery = $pdo->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ? ORDER BY id');
-$itemsQuery->execute([$orderId]);
-$items = $itemsQuery->fetchAll();
+$items = list_order_items((int) $orderId);
 
 $isDpPaid = in_array($order['payment_status'], ['dp_paid', 'paid'], true);
 $isFullyPaid = $order['payment_status'] === 'paid';
@@ -52,7 +47,7 @@ $remainingAmount = max(0.0, $totalWithShipping - $paidAmount);
 $scheduledDateStr = $order['delivery_date'] ? indo_date($order['delivery_date']) : 'Belum ditentukan';
 $pageTitle = 'Status Preorder #' . $orderCode;
 $currentNav = 'orders';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell order-detail-page">
     <nav class="product-breadcrumb-bar" aria-label="Breadcrumb">
@@ -255,4 +250,4 @@ require __DIR__ . '/includes/header.php';
         </aside>
     </div>
 </main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

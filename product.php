@@ -10,9 +10,7 @@ if (!$productId) {
     exit;
 }
 
-$query = db()->prepare('SELECT * FROM products WHERE id = ? AND is_active = 1');
-$query->execute([$productId]);
-$product = $query->fetch();
+$product = find_active_product((int) $productId);
 
 if (!$product) {
     set_flash('error', 'Produk tidak ditemukan atau sedang tidak aktif.');
@@ -37,7 +35,7 @@ $defaultDeliveryDate = $parsedSavedDeliveryDate && $parsedSavedDeliveryDate->for
 $defaultFulfillment = $_SESSION['preorder_fulfillment'] ?? 'delivery';
 $pageTitle = $product['name'] . ' - Detail Pre-order';
 $currentNav = 'menu';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell product-detail-shell">
     <nav class="product-breadcrumb-bar" aria-label="Breadcrumb">
@@ -209,4 +207,4 @@ require __DIR__ . '/includes/header.php';
     }
 </script>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

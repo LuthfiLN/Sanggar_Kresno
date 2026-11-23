@@ -15,9 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
     if (!$parsedDeliveryDate || $parsedDeliveryDate->format('Y-m-d') !== $deliveryDate || $parsedDeliveryDate < $minimumDeliveryDate) {
         set_flash('error', 'Tanggal pre-order tidak bisa dipilih untuk besok atau lusa. Pemesanan minimal 3 hari setelah dipesan agar kue dapat dibuat segar.');
     } else {
-        $query = db()->prepare('SELECT id, stock FROM products WHERE id = ? AND is_active = 1');
-        $query->execute([$productId]);
-        $product = $query->fetch();
+        $product = find_active_product_stock((int) $productId);
 
         if (!$product || (int) $product['stock'] < 1 || !$quantity || $quantity < 1) {
             set_flash('error', 'Produk sedang tidak tersedia.');
@@ -37,31 +35,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
 
 $search = trim((string) ($_GET['q'] ?? ''));
 $category = (string) ($_GET['category'] ?? 'semua');
-$conditions = ['is_active = 1'];
-$parameters = [];
-
-if ($search !== '') {
-    $conditions[] = '(name LIKE ? OR description LIKE ? OR category LIKE ?)';
-    $term = '%' . $search . '%';
-    array_push($parameters, $term, $term, $term);
-}
-
-if ($category === 'makanan') {
-    $conditions[] = "(category LIKE '%kue%' OR category LIKE '%makanan%')";
-} elseif ($category === 'minuman') {
-    $conditions[] = "category LIKE '%minuman%'";
-} else {
+if (!in_array($category, ['semua', 'makanan', 'minuman'], true)) {
     $category = 'semua';
 }
-
-$productsQuery = db()->prepare('SELECT * FROM products WHERE ' . implode(' AND ', $conditions) . ' ORDER BY created_at DESC');
-$productsQuery->execute($parameters);
-$products = $productsQuery->fetchAll();
+$products = search_active_products($search, $category);
 
 $nextBatchDate = indo_date(date('Y-m-d', strtotime('+3 days')));
 $pageTitle = 'Katalog Pre-Order';
 $currentNav = 'menu';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell">
     <div class="catalog-header-wrap">
@@ -179,4 +161,4 @@ require __DIR__ . '/includes/header.php';
         </div>
     </section>
 </main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

@@ -5,13 +5,11 @@ declare(strict_types=1);
 require __DIR__ . '/config.php';
 $user = require_login();
 
-$query = db()->prepare('SELECT o.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count FROM orders o WHERE o.user_id = ? ORDER BY o.created_at DESC');
-$query->execute([$user['id']]);
-$orders = $query->fetchAll();
+$orders = list_orders_for_user((int) $user['id']);
 
 $pageTitle = 'Pesanan Saya';
 $currentNav = 'orders';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell">
     <div class="page-heading">
@@ -73,4 +71,4 @@ require __DIR__ . '/includes/header.php';
         </div>
     <?php endif; ?>
 </main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

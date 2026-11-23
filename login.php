@@ -18,9 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($loginInput === '' || $password === '') {
         $error = 'Masukkan username atau email serta kata sandi.';
     } else {
-        $query = db()->prepare('SELECT id, password, role FROM users WHERE email = ? OR name = ? LIMIT 1');
-        $query->execute([$loginInput, $loginInput]);
-        $account = $query->fetch();
+        $account = find_user_for_login($loginInput);
 
         if ($account && password_verify($password, $account['password'])) {
             session_regenerate_id(true);

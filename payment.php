@@ -12,9 +12,7 @@ if (!$orderId) {
 }
 
 $pdo = db();
-$orderQuery = $pdo->prepare('SELECT * FROM orders WHERE id = ? AND (user_id = ? OR ? = "admin")');
-$orderQuery->execute([$orderId, $user['id'], $user['role']]);
-$order = $orderQuery->fetch();
+$order = find_order_for_viewer((int) $orderId, (int) $user['id'], (string) $user['role']);
 
 if (!$order) {
     set_flash('error', 'Pesanan tidak ditemukan.');
@@ -22,9 +20,7 @@ if (!$order) {
     exit;
 }
 
-$itemsQuery = $pdo->prepare('SELECT product_name, price, quantity FROM order_items WHERE order_id = ? ORDER BY id');
-$itemsQuery->execute([$orderId]);
-$items = $itemsQuery->fetchAll();
+$items = list_order_items((int) $orderId);
 
 $isDp = $order['payment_status'] === 'unpaid';
 
@@ -58,7 +54,7 @@ $orderCode = 'SR-' . date('y', strtotime($order['created_at'])) . str_pad((strin
 $vaNumber = '80777 ' . substr(preg_replace('/\D/', '', (string) $order['phone']) ?: '081234567810', 0, 12);
 $pageTitle = ($isDp ? 'Pembayaran DP' : 'Pelunasan') . ' - ' . $orderCode;
 $currentNav = 'orders';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell payment-page">
     <nav class="checkout-steps" aria-label="Tahap pemesanan">
@@ -247,4 +243,4 @@ function copyVA() {
 }
 </script>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

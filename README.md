@@ -6,8 +6,8 @@ Toko online kue Lebaran rumahan dengan sistem preorder. Kue mulai dibuat setelah
 
 1. Letakkan folder di `C:\xampp\htdocs\Sanggar_Tresno`.
 2. Jalankan **Apache** dan **MySQL** dari XAMPP Control Panel.
-3. Pastikan database `sanggar_tresno` tersedia di MySQL. Installer tidak membuat database baru.
-4. Buka `http://localhost/Sanggar_Tresno/install.php`. Installer menyiapkan tabel aplikasi preorder di database tersebut dan menambahkan produk contoh jika katalog masih kosong.
+3. Pastikan database `sanggar_tresno` tersedia di MySQL.
+4. Siapkan tabel aplikasi sesuai schema database sebelum membuka aplikasi.
 5. Buat akun admin pertama jika belum ada.
 6. Buka `http://localhost/Sanggar_Tresno/` untuk katalog atau `http://localhost/Sanggar_Tresno/admin/` untuk dashboard.
 
@@ -25,20 +25,22 @@ Belum ada payment gateway yang diintegrasikan. Jangan menandai pembayaran terver
 
 ## Struktur aplikasi
 
-Entry point publik masih berada di root agar URL lama tetap kompatibel. Kode baru dikelompokkan berdasarkan tanggung jawab:
+Halaman publik berada di root, halaman admin berada di `admin/`, sehingga URL Apache/XAMPP tetap langsung dan tidak membutuhkan router tambahan. Kode bersama dikelompokkan berdasarkan tanggung jawab:
 
 ```text
 app/
   Bootstrap/       bootstrap aplikasi dan session
   Config/          konfigurasi aplikasi/database
   Database/        koneksi dan schema
-  Support/         helper dan autentikasi
-admin/             halaman admin
-includes/          template HTML
+  Repositories/    akses data terpusat
+  Support/         helper, autentikasi, enkripsi
+  Views/           template publik dan admin
+admin/             halaman dashboard admin
 assets/            CSS dan gambar
+api/               router serverless opsional
 ```
 
-`config.php` saat ini adalah compatibility bootstrap yang dipakai seluruh halaman lama. Jangan menghapusnya sebelum semua entry point dipindahkan ke `app/Bootstrap/app.php`. Target refactor berikutnya: satu bootstrap, satu koneksi PDO, helper terpisah dari konfigurasi, lalu controller/view dipisahkan.
+`config.php` adalah compatibility bootstrap tipis untuk mempertahankan URL lama. Semua halaman memuat bootstrap tunggal melalui file tersebut.
 
 ## Konfigurasi
 

@@ -20,9 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['cart'][$productId]);
             set_flash('success', 'Produk dihapus dari keranjang.');
         } else {
-            $stockQuery = db()->prepare('SELECT stock FROM products WHERE id = ? AND is_active = 1');
-            $stockQuery->execute([$productId]);
-            $stock = $stockQuery->fetchColumn();
+            $product = find_active_product_stock((int) $productId);
+            $stock = $product['stock'] ?? false;
             if ($stock === false) {
                 unset($_SESSION['cart'][$productId]);
             } else {
@@ -40,10 +39,7 @@ $total = 0.0;
 if ($cart) {
     $ids = array_values(array_filter(array_map('intval', array_keys($cart))));
     if ($ids) {
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $query = db()->prepare("SELECT id, name, price, stock, image_url, category FROM products WHERE is_active = 1 AND id IN ($placeholders)");
-        $query->execute($ids);
-        $items = $query->fetchAll();
+        $items = find_cart_products($ids);
         foreach ($items as &$item) {
             $item['quantity'] = min((int) ($cart[$item['id']] ?? 1), (int) $item['stock']);
             $item['subtotal'] = (float) $item['price'] * $item['quantity'];
@@ -70,7 +66,7 @@ if ($viewer) {
 
 $pageTitle = 'Keranjang Checkout';
 $currentNav = 'cart';
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/app/Views/header.php';
 ?>
 <main class="page-shell cart-page">
     <nav class="checkout-steps" aria-label="Tahap pemesanan">
@@ -234,4 +230,4 @@ require __DIR__ . '/includes/header.php';
     </div>
     <?php endif; ?>
 </main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/app/Views/footer.php'; ?>

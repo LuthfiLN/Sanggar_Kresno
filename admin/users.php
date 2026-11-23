@@ -37,7 +37,7 @@ $customers = $pdo->query("SELECT id, name, email, created_at, (SELECT COUNT(*) F
 
 $pageTitle = 'Kelola Pengguna';
 $adminActive = 'admins';
-require dirname(__DIR__) . '/includes/admin_header.php';
+require dirname(__DIR__) . '/../app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-orders-header">
@@ -138,4 +138,4 @@ require dirname(__DIR__) . '/includes/admin_header.php';
         </div>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/includes/admin_footer.php'; ?>
+<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>

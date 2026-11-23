@@ -149,9 +149,9 @@ $currentNav = 'chat';
 
 if ($isAdmin) {
     $adminActive = 'chat';
-    require __DIR__ . '/includes/admin_header.php';
+    require __DIR__ . '/app/Views/Admin/header.php';
 } else {
-    require __DIR__ . '/includes/header.php';
+    require __DIR__ . '/app/Views/header.php';
 }
 ?>
 <main class="page-shell chat-shell">
@@ -358,4 +358,4 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php require __DIR__ . ($isAdmin ? '/includes/admin_footer.php' : '/includes/footer.php'); ?>
+<?php require dirname(__DIR__) . ($isAdmin ? '/Views/Admin/footer.php' : '/Views/footer.php'); ?>
