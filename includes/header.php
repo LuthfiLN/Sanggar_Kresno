@@ -12,7 +12,7 @@ $flashMessage = take_flash();
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="theme-color" content="#f7f5ef">
     <meta name="description"
         content="Sistem Penjualan Pre-Order & Manajemen Toko Sanggar Tresno Medan. Aneka kue rumahan dibuat segar setelah DP dikonfirmasi.">

@@ -23,6 +23,47 @@ Gunakan satu halaman login di `http://localhost/Sanggar_Tresno/login.php`. Setel
 
 Belum ada payment gateway yang diintegrasikan. Jangan menandai pembayaran terverifikasi sebelum dana benar-benar diterima. Produk contoh dan ilustrasi kue berada di folder `assets`.
 
+## Struktur aplikasi
+
+Entry point publik masih berada di root agar URL lama tetap kompatibel. Kode baru dikelompokkan berdasarkan tanggung jawab:
+
+```text
+app/
+  Bootstrap/       bootstrap aplikasi dan session
+  Config/          konfigurasi aplikasi/database
+  Database/        koneksi dan schema
+  Support/         helper dan autentikasi
+admin/             halaman admin
+includes/          template HTML
+assets/            CSS dan gambar
+```
+
+`config.php` saat ini adalah compatibility bootstrap yang dipakai seluruh halaman lama. Jangan menghapusnya sebelum semua entry point dipindahkan ke `app/Bootstrap/app.php`. Target refactor berikutnya: satu bootstrap, satu koneksi PDO, helper terpisah dari konfigurasi, lalu controller/view dipisahkan.
+
 ## Konfigurasi
 
-Pengaturan koneksi database `sanggar_tresno` berada di `config.php`. Nilai awal mengikuti XAMPP lokal (`root` tanpa kata sandi). Sebelum dipasang di server publik, ubah kredensial database, gunakan HTTPS, dan amankan akses installer serta akun admin.
+Salin `.env.example` menjadi `.env`. Jangan commit `.env`. Generate `APP_KEY` acak dan rahasiakan. Gunakan HTTPS di production.
+
+Database lokal menggunakan MySQL XAMPP. `DATABASE_URL` dapat dipakai untuk provider MySQL-compatible seperti TiDB Cloud.
+
+## Vercel + TiDB
+
+Bisa secara teknis, dengan batasan penting:
+
+1. TiDB Cloud kompatibel dengan MySQL/PDO. Gunakan host, port, database, username, password, dan TLS dari TiDB Cloud. Set `DB_SSL=true` bila provider mewajibkan TLS.
+2. Vercel tidak menyediakan runtime PHP resmi seperti Apache/PHP-FPM. PHP perlu runtime komunitas/custom. Uji seluruh route, upload, rewrite, dan extension `pdo_mysql` sebelum production.
+3. Vercel bersifat serverless/stateless. Session file lokal, SQLite lokal, dan file upload lokal tidak boleh dianggap persisten.
+4. Gunakan session eksternal/database-backed, object storage untuk upload, dan TiDB sebagai database utama. Set `DB_REQUIRE=true` di production agar fallback SQLite tidak dipakai.
+5. Untuk aplikasi PHP server-rendered dengan session admin, pilihan lebih stabil: Railway, Render, Fly.io, atau VPS PHP-FPM. Vercel lebih cocok setelah aplikasi diubah menjadi API/serverless atau frontend terpisah.
+
+Checklist production:
+
+- `APP_ENV=production`
+- `DB_REQUIRE=true`
+- `APP_KEY` unik, panjang, rahasia
+- `DB_SSL=true` sesuai konfigurasi TiDB
+- HTTPS aktif
+- installer dinonaktifkan/dihapus
+- backup database aktif
+- session tidak memakai filesystem ephemeral
+- semua route PHP diuji setelah deploy

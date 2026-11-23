@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($targetOrderOwner !== null) {
                 $insert = $pdo->prepare('INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, ?, ?)');
-                $insert->execute([$targetOrder, $targetOrderOwner, $isAdmin ? 'admin' : 'customer', $body]);
+                $insert->execute([$targetOrder, $targetOrderOwner, $isAdmin ? 'admin' : 'customer', encrypt_message($body)]);
             }
         }
         header('Location: ' . app_url('chat.php?order=' . $targetOrder));
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $notifMsg = 'Ongkir telah disepakati sebesar ' . rupiah($shippingFee) . ' dan diterapkan ke pesanan #' . order_code($targetOrderId) . '.';
             $insertMsg = $pdo->prepare("INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, 'admin', ?)");
-            $insertMsg->execute([$targetOrderId, $custId, $notifMsg]);
+            $insertMsg->execute([$targetOrderId, $custId, encrypt_message($notifMsg)]);
 
             set_flash('success', 'Ongkir berhasil diterapkan ke pesanan.');
         }
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $notifMsg = 'Jadwal pengiriman pesanan #' . order_code($targetOrderId) . ' telah disesuaikan menjadi: ' . indo_date($newDate) . ' (13.00-16.00 WIB) sesuai kesepakatan bersama.';
             $insertMsg = $pdo->prepare("INSERT INTO messages (order_id, customer_id, sender_role, body) VALUES (?, ?, 'admin', ?)");
-            $insertMsg->execute([$targetOrderId, $custId, $notifMsg]);
+            $insertMsg->execute([$targetOrderId, $custId, encrypt_message($notifMsg)]);
 
             set_flash('success', 'Jadwal pengiriman pesanan #' . order_code($targetOrderId) . ' berhasil disesuaikan.');
         }
@@ -130,6 +130,10 @@ if ($selectedOrder) {
     $q = $pdo->prepare('SELECT m.*, u.name AS customer_name FROM messages m JOIN users u ON u.id = m.customer_id WHERE m.order_id = ? ORDER BY m.id ASC LIMIT 300');
     $q->execute([$selectedOrder]);
     $messages = $q->fetchAll();
+    foreach ($messages as &$message) {
+        $message['body'] = decrypt_message((string) $message['body']);
+    }
+    unset($message);
 }
 
 $latestOrder = $order;

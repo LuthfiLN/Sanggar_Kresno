@@ -62,6 +62,10 @@ if ($viewer) {
     $chatQuery = db()->prepare('SELECT * FROM messages WHERE customer_id = ? ORDER BY id DESC LIMIT 3');
     $chatQuery->execute([$viewer['id']]);
     $recentMessages = array_reverse($chatQuery->fetchAll());
+        foreach ($recentMessages as &$message) {
+            $message['body'] = decrypt_message((string) $message['body']);
+        }
+        unset($message);
 }
 
 $pageTitle = 'Keranjang Checkout';

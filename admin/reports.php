@@ -119,14 +119,14 @@ require dirname(__DIR__) . '/includes/admin_header.php';
             <table class="admin-data-table report-table">
                 <thead>
                     <tr>
-                        <th>KODE</th>
-                        <th>JADWAL KIRIM</th>
-                        <th>PELANGGAN</th>
-                        <th>PESANAN KUE</th>
-                        <th>ONGKIR</th>
-                        <th>TOTAL</th>
+                        <th>Kode</th>
+                        <th>Jadwal kirim</th>
+                        <th>Pelanggan</th>
+                        <th>Pesanan</th>
+                        <th>Ongkir</th>
+                        <th>Total</th>
                         <th>DP 50%</th>
-                        <th>STATUS</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -137,14 +137,14 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <?php endif; ?>
                     <?php foreach ($reportOrders as $ro): ?>
                     <tr>
-                        <td><strong>#<?= e(order_code($ro)) ?></strong></td>
-                        <td><?= $ro['delivery_date'] ? e(indo_date($ro['delivery_date'], false)) : '-' ?></td>
-                        <td><?= e($ro['recipient_name'] ?: $ro['customer_name']) ?></td>
-                        <td><small><?= e($ro['item_summary']) ?></small></td>
-                        <td><?= !empty($ro['shipping_fee']) ? rupiah($ro['shipping_fee']) : 'Rp 0' ?></td>
-                        <td><strong><?= rupiah((float) $ro['total'] + (int) ($ro['shipping_fee'] ?? 0)) ?></strong></td>
-                        <td><?= rupiah($ro['dp_amount']) ?></td>
-                        <td>
+                        <td data-label="Kode"><strong>#<?= e(order_code($ro)) ?></strong></td>
+                        <td data-label="Jadwal kirim"><?= $ro['delivery_date'] ? e(indo_date($ro['delivery_date'], false)) : '-' ?></td>
+                        <td data-label="Pelanggan"><?= e($ro['recipient_name'] ?: $ro['customer_name']) ?></td>
+                        <td data-label="Pesanan"><small><?= e($ro['item_summary']) ?></small></td>
+                        <td data-label="Ongkir"><?= !empty($ro['shipping_fee']) ? rupiah($ro['shipping_fee']) : 'Rp 0' ?></td>
+                        <td data-label="Total"><strong><?= rupiah((float) $ro['total'] + (int) ($ro['shipping_fee'] ?? 0)) ?></strong></td>
+                        <td data-label="DP 50%"><?= rupiah($ro['dp_amount']) ?></td>
+                        <td data-label="Status">
                             <span
                                 class="badge-dp-tag <?= in_array($ro['payment_status'], ['dp_paid', 'paid'], true) ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
                                 <?= e(payment_status_label($ro['payment_status'])) ?>

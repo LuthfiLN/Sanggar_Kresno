@@ -103,11 +103,11 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <table class="admin-data-table">
                         <thead>
                             <tr>
-                                <th>PESANAN</th>
-                                <th>PELANGGAN / ITEM</th>
+                                <th>Pesanan</th>
+                                <th>Pelanggan / item</th>
                                 <th>DP</th>
-                                <th>TOTAL</th>
-                                <th>AKSI</th>
+                                <th>Total</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,22 +119,22 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                             <?php foreach ($orders as $o): ?>
                                 <?php $isPaid = in_array($o['payment_status'], ['dp_paid', 'paid'], true); ?>
                                 <tr>
-                                    <td>
+                                    <td data-label="Pesanan">
                                         <strong>#<?= e(order_code($o)) ?></strong>
                                     </td>
-                                    <td>
+                                    <td data-label="Pelanggan / item">
                                         <strong><?= e($o['customer_name']) ?></strong>
                                         <small class="cell-sub-item"><?= e($o['item_summary'] ?? '') ?></small>
                                     </td>
-                                    <td>
+                                    <td data-label="DP">
                                         <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
                                             <?= $isPaid ? 'DP Paid' : 'Pending' ?>
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="Total">
                                         <strong><?= rupiah((float) $o['total'] + (int) ($o['shipping_fee'] ?? 0)) ?></strong>
                                     </td>
-                                    <td>
+                                    <td data-label="Aksi">
                                         <a class="button button-outline-dark button-small"
                                             href="kelola_orders.php?order=<?= (int) $o['id'] ?>">Detail</a>
                                     </td>

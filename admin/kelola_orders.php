@@ -175,11 +175,11 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <table class="admin-data-table">
                         <thead>
                             <tr>
-                                <th>NO</th>
-                                <th>PELANGGAN</th>
+                                <th>No</th>
+                                <th>Pelanggan</th>
                                 <th>DP</th>
-                                <th>TOTAL</th>
-                                <th>AKSI</th>
+                                <th>Total</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -194,23 +194,23 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                                 $isPaid = in_array($ord['payment_status'], ['dp_paid', 'paid'], true);
                                 ?>
                             <tr class="<?= $isCur ? 'tr-selected' : '' ?>">
-                                <td>
+                                <td data-label="No">
                                     <strong>#<?= sprintf('%03d', $ord['id']) ?></strong>
                                 </td>
-                                <td>
+                                <td data-label="Pelanggan">
                                     <strong><?= e($ord['recipient_name'] ?: $ord['customer_name']) ?></strong>
                                     <small class="cell-sub-item">Antar:
                                         <?= $ord['delivery_date'] ? e(indo_date($ord['delivery_date'])) : 'Menunggu jadwal' ?></small>
                                 </td>
-                                <td>
+                                <td data-label="DP">
                                     <span class="badge-dp-tag <?= $isPaid ? 'badge-dp-paid' : 'badge-dp-pending' ?>">
                                         <?= $isPaid ? 'DP Paid' : 'Pending' ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Total">
                                     <strong><?= rupiah((float) $ord['total'] + (int) ($ord['shipping_fee'] ?? 0)) ?></strong>
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <a class="button button-outline-dark button-small <?= $isCur ? 'button-active' : '' ?>"
                                         href="kelola_orders.php?tab=<?= e($tab) ?>&order=<?= (int) $ord['id'] ?>&q=<?= urlencode($search) ?>&date=<?= urlencode($filterDate) ?>">
                                         <?= $isCur ? 'Terpilih' : 'Detail' ?>

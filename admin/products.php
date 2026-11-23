@@ -137,11 +137,11 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <table class="admin-data-table">
                         <thead>
                             <tr>
-                                <th>PRODUK</th>
-                                <th>HARGA</th>
-                                <th>KUOTA</th>
-                                <th>STATUS</th>
-                                <th>AKSI</th>
+                                <th>Produk</th>
+                                <th>Harga</th>
+                                <th>Kuota</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,7 +152,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                             <?php endif; ?>
                             <?php foreach ($products as $p): ?>
                             <tr>
-                                <td>
+                                <td data-label="Produk">
                                     <div class="prod-table-cell-flex">
                                         <img class="prod-table-thumb"
                                             src="<?= e(asset_url($p['image_url'] ?: 'assets/product-nastar.png')) ?>"
@@ -163,13 +163,13 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                                         </div>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Harga">
                                     <strong><?= rupiah($p['price']) ?></strong>
                                 </td>
-                                <td>
+                                <td data-label="Kuota">
                                     <span><?= (int) $p['stock'] ?> toples</span>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <form method="post" style="display:inline;">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="action" value="toggle">
@@ -181,7 +181,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                                         </button>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <div class="table-action-btns">
                                         <a class="button button-outline-dark button-small"
                                             href="products.php?edit=<?= (int) $p['id'] ?>#form-produk">

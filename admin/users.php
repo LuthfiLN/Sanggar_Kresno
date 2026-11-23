@@ -49,7 +49,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
     </div>
 
     <?php if ($error): ?>
-    <div class="notice notice-error"><?= e($error) ?></div>
+        <div class="notice notice-error"><?= e($error) ?></div>
     <?php endif; ?>
 
     <div class="products-management-grid">
@@ -63,7 +63,7 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <div class="form-group-clean">
                         <label for="admin-name">Nama lengkap</label>
                         <input id="admin-name" type="text" name="name" required maxlength="120"
-                            placeholder="Misal: Ayu Pratiwi">
+                            placeholder="Misal: Luthfi Nurrahman">
                     </div>
                     <div class="form-group-clean">
                         <label for="admin-email">Email</label>
@@ -87,18 +87,18 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <table class="admin-data-table">
                         <thead>
                             <tr>
-                                <th>NAMA</th>
-                                <th>EMAIL</th>
-                                <th>TERDAFTAR</th>
+                                <th>Nama</th>
+                                <th>Email</th>
+                                <th>Terdaftar</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($admins as $a): ?>
-                            <tr>
-                                <td><strong><?= e($a['name']) ?></strong></td>
-                                <td><?= e($a['email']) ?></td>
-                                <td><?= indo_date($a['created_at'], false) ?></td>
-                            </tr>
+                                <tr>
+                                    <td data-label="Nama"><strong><?= e($a['name']) ?></strong></td>
+                                    <td data-label="Email"><?= e($a['email']) ?></td>
+                                    <td data-label="Terdaftar"><?= indo_date($a['created_at'], false) ?></td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -111,25 +111,25 @@ require dirname(__DIR__) . '/includes/admin_header.php';
                     <table class="admin-data-table">
                         <thead>
                             <tr>
-                                <th>NAMA</th>
-                                <th>EMAIL</th>
-                                <th>PESANAN</th>
-                                <th>TERDAFTAR</th>
+                                <th>Nama</th>
+                                <th>Email</th>
+                                <th>Pesanan</th>
+                                <th>Terdaftar</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!$customers): ?>
-                            <tr>
-                                <td colspan="4" class="empty-table-cell">Belum ada pelanggan terdaftar.</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="4" class="empty-table-cell">Belum ada pelanggan terdaftar.</td>
+                                </tr>
                             <?php endif; ?>
                             <?php foreach ($customers as $c): ?>
-                            <tr>
-                                <td><strong><?= e($c['name']) ?></strong></td>
-                                <td><?= e($c['email']) ?></td>
-                                <td><?= (int) $c['order_count'] ?> pesanan</td>
-                                <td><?= indo_date($c['created_at'], false) ?></td>
-                            </tr>
+                                <tr>
+                                    <td data-label="Nama"><strong><?= e($c['name']) ?></strong></td>
+                                    <td data-label="Email"><?= e($c['email']) ?></td>
+                                    <td data-label="Pesanan"><?= (int) $c['order_count'] ?> pesanan</td>
+                                    <td data-label="Terdaftar"><?= indo_date($c['created_at'], false) ?></td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
