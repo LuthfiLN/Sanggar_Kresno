@@ -31,10 +31,10 @@ $whereSql = implode(' AND ', $where);
 // Ringkasan Finansial untuk filter terpilih
 $summaryStmt = $pdo->prepare("SELECT 
     COUNT(*) AS total_orders,
-    COALESCE(SUM(o.total + o.shipping_fee), 0) AS total_revenue,
+    COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN (o.total + o.shipping_fee) WHEN o.payment_status = 'dp_paid' THEN o.dp_amount ELSE 0 END), 0) AS total_revenue,
     COALESCE(SUM(CASE WHEN o.payment_status IN ('dp_paid', 'paid') THEN o.dp_amount ELSE 0 END), 0) AS dp_collected,
     COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN (o.total + o.shipping_fee) WHEN o.payment_status = 'dp_paid' THEN o.dp_amount ELSE 0 END), 0) AS cash_received,
-    COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN 0 WHEN o.payment_status = 'dp_paid' THEN ((o.total + o.shipping_fee) - o.dp_amount) ELSE (o.total + o.shipping_fee) END), 0) AS pending_receivables
+    COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN 0 WHEN o.payment_status = 'dp_paid' THEN GREATEST((o.total + o.shipping_fee) - o.dp_amount, 0) ELSE (o.total + o.shipping_fee) END), 0) AS pending_receivables
 FROM orders o WHERE $whereSql");
 $summaryStmt->execute($params);
 $summary = $summaryStmt->fetch();
@@ -43,9 +43,37 @@ $reportStmt = $pdo->prepare("SELECT o.*, u.name AS customer_name, (SELECT GROUP_
 $reportStmt->execute($params);
 $reportOrders = $reportStmt->fetchAll();
 
+if (($_GET['export'] ?? '') === 'pdf') {
+    $pdf = new SimplePdf('Laporan Penjualan Sanggar Kresno');
+    $pdf->heading('Laporan Penjualan & Pre-Order');
+    $pdf->paragraph('Sanggar Kresno  |  Periode: ' . indo_date($startDate) . ' s/d ' . indo_date($endDate));
+    $pdf->paragraph('Total pre-order: ' . (int) $summary['total_orders']
+        . '   |   Omzet: ' . rupiah($summary['total_revenue'])
+        . '   |   Kas masuk: ' . rupiah($summary['cash_received'])
+        . '   |   Piutang: ' . rupiah($summary['pending_receivables']));
+    $pdf->gap(8);
+    $widths = [72, 68, 90, 145, 55, 62, 70];
+    $pdf->row(['Kode', 'Jadwal', 'Pelanggan', 'Pesanan', 'Ongkir', 'Total', 'Status'], $widths, true);
+    if (!$reportOrders) {
+        $pdf->paragraph('Tidak ada transaksi dalam rentang tanggal ini.');
+    }
+    foreach ($reportOrders as $ro) {
+        $pdf->row([
+            '#' . order_code($ro),
+            $ro['delivery_date'] ? indo_date((string) $ro['delivery_date'], false) : '-',
+            (string) ($ro['recipient_name'] ?: $ro['customer_name']),
+            (string) ($ro['item_summary'] ?? ''),
+            !empty($ro['shipping_fee']) ? rupiah($ro['shipping_fee']) : 'Rp 0',
+            rupiah((float) $ro['total'] + (int) ($ro['shipping_fee'] ?? 0)),
+            payment_status_label((string) $ro['payment_status']),
+        ], $widths);
+    }
+    $pdf->output('laporan-penjualan-' . $startDate . '-sampai-' . $endDate . '.pdf');
+}
+
 $pageTitle = 'Laporan Penjualan';
 $adminActive = 'reports';
-require dirname(__DIR__) . '/../app/Views/Admin/header.php';
+require dirname(__DIR__) . '/app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-orders-header">
@@ -54,9 +82,9 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
             <h1 class="page-main-title">Laporan Penjualan &amp; Pre-Order</h1>
             <p class="page-subtitle">Rekapitulasi transaksi, penerimaan DP 50%, ongkir, dan sisa pelunasan.</p>
         </div>
-        <button type="button" class="button button-solid-black" onclick="window.print()">
-            &#128438; Cetak / Export PDF
-        </button>
+        <a class="button button-solid-black" href="?<?= e(http_build_query(['start_date' => $startDate, 'end_date' => $endDate, 'status' => $statusFilter, 'export' => 'pdf'])) ?>">
+            &#128438; Export PDF
+        </a>
     </div>
 
     <div class="panel admin-panel-box report-filter-panel no-print">
@@ -95,7 +123,7 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         <div class="stat-card-white">
             <span class="stat-label">Total Omset</span>
             <h2 class="stat-number"><?= rupiah($summary['total_revenue']) ?></h2>
-            <small class="stat-meta">Termasuk ongkir</small>
+            <small class="stat-meta">Hanya dana yang sudah masuk</small>
         </div>
         <div class="stat-card-white">
             <span class="stat-label">Kas Masuk (DP + Lunas)</span>
@@ -111,7 +139,7 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
 
     <section class="panel admin-panel-box report-table-section">
         <div class="report-print-header print-only">
-            <h2>SANGGAR TRESNO &bull; LAPORAN PENJUALAN PRE-ORDER</h2>
+            <h2>SANGGAR KRESNO &bull; LAPORAN PENJUALAN PRE-ORDER</h2>
             <p>Periode Pengiriman: <?= indo_date($startDate) ?> s/d <?= indo_date($endDate) ?></p>
         </div>
 
@@ -157,4 +185,4 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         </div>
     </section>
 </main>
-<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>
+<?php require dirname(__DIR__) . '/app/Views/Admin/footer.php'; ?>

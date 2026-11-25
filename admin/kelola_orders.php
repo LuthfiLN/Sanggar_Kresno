@@ -122,7 +122,7 @@ if ($selectedOrder) {
 
 $pageTitle = 'Kelola Pesanan Masuk';
 $adminActive = 'orders';
-require dirname(__DIR__) . '/../app/Views/Admin/header.php';
+require dirname(__DIR__) . '/app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-orders-header">
@@ -366,4 +366,4 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         </div>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>
+<?php require dirname(__DIR__) . '/app/Views/Admin/footer.php'; ?>

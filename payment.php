@@ -114,12 +114,12 @@ require __DIR__ . '/app/Views/header.php';
                         </svg>
                     </div>
 
-                    <p class="qris-merchant">NMID: ID1029384756201 &middot; <strong>SANGGAR TRESNO</strong></p>
+                    <p class="qris-merchant">NMID: ID1029384756201 &middot; <strong>SANGGAR KRESNO</strong></p>
 
                     <ol class="payment-steps-list">
                         <li><span>01</span> Buka aplikasi m-Banking atau e-Wallet (GoPay, OVO, Dana, ShopeePay).</li>
                         <li><span>02</span> Scan kode QRIS di atas dan pastikan nama penerima <strong>SANGGAR
-                                TRESNO</strong>.</li>
+                                KRESNO</strong>.</li>
                         <li><span>03</span> Selesaikan pembayaran sebesar <strong><?= rupiah($amountToPay) ?></strong>.
                         </li>
                     </ol>
@@ -148,7 +148,7 @@ require __DIR__ . '/app/Views/header.php';
                     <div>
                         <span class="va-label">NOMOR VIRTUAL ACCOUNT</span>
                         <strong class="va-digits" id="vaNumberDisplay"><?= e($vaNumber) ?></strong>
-                        <small>a.n. SANGGAR TRESNO - <?= rupiah($amountToPay) ?></small>
+                        <small>a.n. SANGGAR KRESNO - <?= rupiah($amountToPay) ?></small>
                     </div>
                     <button type="button" class="button button-outline button-small" onclick="copyVA()">
                         Salin nomor VA

@@ -15,8 +15,8 @@ $flashMessage = take_flash();
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="theme-color" content="#f7f5ef">
     <meta name="description"
-        content="Sistem Penjualan Pre-Order & Manajemen Toko Sanggar Tresno Medan. Aneka kue rumahan dibuat segar setelah DP dikonfirmasi.">
-    <title><?= e($pageTitle) ?> | Sanggar Tresno</title>
+        content="Sistem Penjualan Pre-Order & Manajemen Toko Sanggar Kresno Medan. Aneka kue rumahan dibuat segar setelah DP dikonfirmasi.">
+    <title><?= e($pageTitle) ?> | Sanggar Kresno</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -29,9 +29,9 @@ $flashMessage = take_flash();
     <header class="site-header">
         <div class="header-left">
             <a class="brand" href="<?= e(app_url('index.php')) ?>">
-                <span class="brand-mark">sr.</span>
+                <img class="brand-logo" src="<?= e(asset_url('assets/Logo.png')) ?>" alt="Logo Sanggar Kresno">
                 <span class="brand-text">
-                    Sanggar <strong>Tresno</strong>
+                    Sanggar <strong>Kresno</strong>
                     <small>Aneka Kue Rumahan &bull; PRE-ORDER</small>
                 </span>
             </a>

@@ -7,8 +7,8 @@ $currentNav = $currentNav ?? '';
     <div class="footer-inner">
         <div class="footer-brand">
             <a class="brand" href="<?= e(app_url('index.php')) ?>">
-                <span class="brand-mark">sr.</span>
-                <span>Sanggar <strong>Tresno</strong><small>Resep rumahan, dibuat segar.</small></span>
+                <img class="brand-logo" src="<?= e(asset_url('assets/Logo.png')) ?>" alt="Logo Sanggar Kresno">
+                <span>Sanggar <strong>Kresno</strong><small>Resep rumahan, dibuat segar.</small></span>
             </a>
         </div>
         <p class="footer-center-text">Dibuat sesuai pesanan &bull; Medan &bull; Bantuan 08.00–18.00 WIB</p>

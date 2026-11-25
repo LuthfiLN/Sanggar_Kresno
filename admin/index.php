@@ -23,8 +23,8 @@ $statsQuery = $pdo->prepare("SELECT
     COUNT(*) AS total_orders,
     SUM(CASE WHEN payment_status = 'dp_paid' THEN 1 ELSE 0 END) AS dp_paid_count,
     SUM(CASE WHEN payment_status = 'unpaid' THEN 1 ELSE 0 END) AS pending_count,
-    COALESCE(SUM(CASE WHEN payment_status IN ('dp_paid', 'paid') THEN dp_amount ELSE 0 END), 0) AS dp_received,
-    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN (total + shipping_fee) WHEN payment_status = 'dp_paid' THEN ((total + shipping_fee) - dp_amount) ELSE (total + shipping_fee) END), 0) AS remaining_bill
+    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN (total + shipping_fee) WHEN payment_status = 'dp_paid' THEN dp_amount ELSE 0 END), 0) AS dp_received,
+    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN 0 WHEN payment_status = 'dp_paid' THEN GREATEST((total + shipping_fee) - dp_amount, 0) ELSE (total + shipping_fee) END), 0) AS remaining_bill
 FROM orders WHERE delivery_date = ? AND status <> 'cancelled'");
 $statsQuery->execute([$batch]);
 $batchStats = $statsQuery->fetch();
@@ -41,7 +41,7 @@ $productionItems = $productionQuery->fetchAll();
 
 $pageTitle = 'Ringkasan Batch';
 $adminActive = 'overview';
-require dirname(__DIR__) . '/../app/Views/Admin/header.php';
+require dirname(__DIR__) . '/app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="admin-dashboard-hero">
@@ -70,9 +70,9 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         </div>
 
         <div class="stat-card-white">
-            <span class="stat-label">DP diterima</span>
+            <span class="stat-label">Dana masuk</span>
             <h2 class="stat-number"><?= rupiah($batchStats['dp_received']) ?></h2>
-            <small class="stat-meta">Total DP batch <?= e($batchFormatted) ?></small>
+            <small class="stat-meta">DP dan pelunasan yang sudah dibayar</small>
         </div>
 
         <div class="stat-card-white">
@@ -84,7 +84,7 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         <div class="stat-card-white">
             <span class="stat-label">Sisa tagihan</span>
             <h2 class="stat-number"><?= rupiah($batchStats['remaining_bill']) ?></h2>
-            <small class="stat-meta">Dari <?= (int) $batchStats['dp_paid_count'] ?> pesanan DP Paid</small>
+            <small class="stat-meta">Belum dibayar, belum masuk omzet</small>
         </div>
     </section>
 
@@ -209,4 +209,4 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         </aside>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>
+<?php require dirname(__DIR__) . '/app/Views/Admin/footer.php'; ?>

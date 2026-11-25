@@ -39,7 +39,7 @@ $pageTitle = 'Masuk';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#e5e5e5">
-    <title>Masuk | Sanggar Tresno</title>
+    <title>Masuk | Sanggar Kresno</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -51,9 +51,9 @@ $pageTitle = 'Masuk';
         <div class="auth-card-clean">
             <div class="auth-card-header">
                 <a class="brand auth-brand" href="<?= e(app_url('index.php')) ?>">
-                    <span class="brand-mark">sr.</span>
+                    <img class="brand-logo" src="<?= e(asset_url('assets/Logo.png')) ?>" alt="Logo Sanggar Kresno">
                     <span class="brand-text">
-                        Sanggar <strong>Tresno</strong>
+                        Sanggar <strong>Kresno</strong>
                         <small>Aneka Kue Rumahan &bull; PRE-ORDER</small>
                     </span>
                 </a>

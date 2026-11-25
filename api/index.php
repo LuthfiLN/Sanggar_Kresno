@@ -84,7 +84,7 @@ http_response_code(404);
 
 <head>
     <meta charset="utf-8">
-    <title>404 - Halaman Tidak Ditemukan | Sanggar Tresno</title>
+    <title>404 - Halaman Tidak Ditemukan | Sanggar Kresno</title>
     <style>
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -119,7 +119,7 @@ http_response_code(404);
 <body>
     <div class="box">
         <h1>404 &bull; Halaman Tidak Ditemukan</h1>
-        <p>Halaman yang Anda minta tidak tersedia di sistem Sanggar Tresno.</p>
+        <p>Halaman yang Anda minta tidak tersedia di sistem Sanggar Kresno.</p>
         <p><a href="/">&larr; Kembali ke Katalog Pre-Order</a></p>
     </div>
 </body>

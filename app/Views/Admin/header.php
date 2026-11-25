@@ -19,7 +19,7 @@ $adminNavigation = [
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="theme-color" content="#f7f5ef">
-    <title><?= e($adminPageTitle) ?> | Admin Sanggar Tresno</title>
+    <title><?= e($adminPageTitle) ?> | Admin Sanggar Kresno</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -41,9 +41,9 @@ $adminNavigation = [
                     </svg>
                 </button>
                 <a class="brand admin-brand" href="<?= e(app_url('admin/index.php')) ?>">
-                    <span class="brand-mark">sr.</span>
+                    <img class="brand-logo" src="<?= e(asset_url('assets/Logo.png')) ?>" alt="Logo Sanggar Kresno">
                     <span class="brand-text">
-                        Sanggar <strong>Tresno</strong>
+                        Sanggar <strong>Kresno</strong>
                         <small>RUANG ADMIN</small>
                     </span>
                 </a>

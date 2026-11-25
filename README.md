@@ -1,4 +1,4 @@
-# Dapur Tresno Medan
+# Sanggar Kresno Medan
 
 Toko online kue Lebaran rumahan dengan sistem preorder. Kue mulai dibuat setelah DP 50% dikonfirmasi admin. Pelunasan dilakukan sebelum pesanan dikirim.
 

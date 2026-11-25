@@ -48,7 +48,7 @@ require __DIR__ . '/app/Views/header.php';
 <main class="page-shell">
     <div class="catalog-header-wrap">
         <div class="catalog-header-left">
-            <p class="eyebrow">Sanggar Tresno / MEDAN</p>
+            <p class="eyebrow">Sanggar Kresno / MEDAN</p>
             <h1 class="catalog-main-title">Daftar produk</h1>
             <p class="catalog-subtitle">Pilih produk dan jadwal pre-order.</p>
         </div>

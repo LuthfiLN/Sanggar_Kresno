@@ -157,7 +157,7 @@ if ($isAdmin) {
 <main class="page-shell chat-shell">
     <div class="page-heading">
         <p class="eyebrow"><?= $isAdmin ? 'RUANG ADMIN / NEGOSIASI' : 'CHAT PREORDER / MEDAN' ?></p>
-        <h1><?= $isAdmin ? 'Inbox negosiasi' : 'Tanya Sanggar Tresno' ?></h1>
+        <h1><?= $isAdmin ? 'Inbox negosiasi' : 'Tanya Sanggar Kresno' ?></h1>
         <p><?= $isAdmin ? 'Sepakati ongkir dan jadwal pengiriman per pesanan.' : 'Diskusikan ongkir dan jadwal pengiriman per pesanan.' ?>
         </p>
     </div>
@@ -201,7 +201,7 @@ if ($isAdmin) {
                     <?php if ($isAdmin): ?>
                     <h2><?= e($customer['name'] ?? 'Pelanggan') ?></h2>
                     <?php else: ?>
-                    <h2>Admin Sanggar Tresno</h2>
+                    <h2>Admin Sanggar Kresno</h2>
                     <?php endif; ?>
                     <small>Pre-order Kue Lebaran Rumahan</small>
                 </div>
@@ -249,7 +249,7 @@ if ($isAdmin) {
                 <?php foreach ($messages as $msg): ?>
                 <?php
                     $isOwn = ($isAdmin && $msg['sender_role'] === 'admin') || (!$isAdmin && $msg['sender_role'] === 'customer');
-                    $senderLabel = $isOwn ? 'Anda' : ($isAdmin ? ($msg['customer_name'] ?? 'Pelanggan') : 'Admin Sanggar Tresno');
+                    $senderLabel = $isOwn ? 'Anda' : ($isAdmin ? ($msg['customer_name'] ?? 'Pelanggan') : 'Admin Sanggar Kresno');
                     ?>
                 <article class="chat-bubble-row <?= $isOwn ? 'is-own' : 'is-other' ?>">
                     <div class="chat-bubble-content">

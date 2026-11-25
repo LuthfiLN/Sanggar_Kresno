@@ -86,7 +86,7 @@ require __DIR__ . '/app/Views/header.php';
     <div class="panel empty-cart-box">
         <div class="empty-icon">&#128722;</div>
         <h2>Keranjang belanjamu masih kosong</h2>
-        <p>Pilih aneka kue kering rumahan buatan Sanggar Tresno yang dibuat segar sesuai batch.</p>
+        <p>Pilih aneka kue kering rumahan buatan Sanggar Kresno yang dibuat segar sesuai batch.</p>
         <a class="button button-solid-black" href="<?= e(app_url('index.php#koleksi')) ?>">Pilih menu kue &rarr;</a>
     </div>
     <?php else: ?>

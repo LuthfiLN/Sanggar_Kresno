@@ -25,6 +25,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 require __DIR__ . '/../Database/Schema.php';
 require __DIR__ . '/../Database/Connection.php';
 require __DIR__ . '/../Support/helpers.php';
+require __DIR__ . '/../Support/SimplePdf.php';
 require __DIR__ . '/../Support/Auth.php';
 require __DIR__ . '/../Support/Encryption.php';
 require __DIR__ . '/../Repositories/ProductRepository.php';

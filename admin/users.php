@@ -37,7 +37,7 @@ $customers = $pdo->query("SELECT id, name, email, created_at, (SELECT COUNT(*) F
 
 $pageTitle = 'Kelola Pengguna';
 $adminActive = 'admins';
-require dirname(__DIR__) . '/../app/Views/Admin/header.php';
+require dirname(__DIR__) . '/app/Views/Admin/header.php';
 ?>
 <main class="admin-page-wrap">
     <div class="panel-header-row kelola-orders-header">
@@ -68,7 +68,7 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
                     <div class="form-group-clean">
                         <label for="admin-email">Email</label>
                         <input id="admin-email" type="email" name="email" required maxlength="190"
-                            placeholder="admin@sanggartresno.com">
+                            placeholder="admin@sanggarkresno.com">
                     </div>
                     <div class="form-group-clean">
                         <label for="admin-pass">Kata sandi awal</label>
@@ -138,4 +138,4 @@ require dirname(__DIR__) . '/../app/Views/Admin/header.php';
         </div>
     </div>
 </main>
-<?php require dirname(__DIR__) . '/../app/Views/Admin/footer.php'; ?>
+<?php require dirname(__DIR__) . '/app/Views/Admin/footer.php'; ?>
